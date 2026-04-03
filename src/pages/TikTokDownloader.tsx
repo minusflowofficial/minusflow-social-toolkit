@@ -326,8 +326,9 @@ const BulkTab = () => {
             );
             successful.forEach((item, idx) => {
               setTimeout(() => {
-                openDownload(item.result!.download_url_no_watermark, item.result!.title, "mp4");
-              }, idx * 800);
+                const proxyUrl = buildProxyUrl(item.result!.download_url_no_watermark, item.result!.title, "mp4");
+                triggerIframeDownload(proxyUrl);
+              }, idx * 1500);
             });
             toast.success(`Downloading ${successful.length} videos...`);
           }}
