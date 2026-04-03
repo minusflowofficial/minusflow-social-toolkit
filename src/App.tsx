@@ -10,6 +10,7 @@ import Privacy from "./pages/Privacy.tsx";
 import Terms from "./pages/Terms.tsx";
 import DMCA from "./pages/DMCA.tsx";
 import Disclaimer from "./pages/Disclaimer.tsx";
+import TikTokDownloader from "./pages/TikTokDownloader.tsx";
 import NotFound from "./pages/NotFound.tsx";
 
 const queryClient = new QueryClient();
@@ -28,6 +29,7 @@ const App = () => (
           <Route path="/terms" element={<Terms />} />
           <Route path="/dmca" element={<DMCA />} />
           <Route path="/disclaimer" element={<Disclaimer />} />
+          <Route path="/tiktok" element={<TikTokDownloader />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

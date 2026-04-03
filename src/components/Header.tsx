@@ -6,6 +6,7 @@ import { createPortal } from "react-dom";
 
 const navLinks = [
   { to: "/", label: "Home" },
+  { to: "/tiktok", label: "TikTok" },
   { to: "/about", label: "About Us" },
   { to: "/contact", label: "Contact Us" },
   { to: "/privacy", label: "Privacy Policy" },
