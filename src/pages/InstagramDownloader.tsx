@@ -33,23 +33,9 @@ interface BulkEntry {
 }
 
 // ── helpers ──
-function buildProxyUrl(mediaUrl: string, filename: string) {
-  const params = new URLSearchParams({ url: mediaUrl, filename });
-  return `${FUNCTION_BASE}?${params}`;
-}
-
-function sanitize(s: string) {
-  return s.replace(/[^a-zA-Z0-9_-]/g, "_").slice(0, 60);
-}
-
-function triggerDownload(mediaUrl: string, filename: string) {
-  const a = document.createElement("a");
-  a.href = buildProxyUrl(mediaUrl, filename);
-  a.download = filename;
-  a.style.display = "none";
-  document.body.appendChild(a);
-  a.click();
-  setTimeout(() => a.remove(), 1000);
+function triggerDownload(mediaUrl: string, _filename: string) {
+  // Instagram CDN blocks server-side proxy; open directly in new tab
+  window.open(mediaUrl, "_blank");
 }
 
 async function fetchMedia(url: string): Promise<SingleResult> {
