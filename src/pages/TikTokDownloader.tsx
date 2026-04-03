@@ -76,7 +76,7 @@ const ResultCard = ({ result }: { result: TikTokResult }) => (
       <div className="flex flex-wrap gap-2">
         <Button
           size="sm"
-          onClick={() => openDownload(result.download_url_no_watermark)}
+          onClick={() => openDownload(result.download_url_no_watermark, result.title, "mp4")}
           className="gap-1.5 bg-[hsl(348,98%,57%)] hover:bg-[hsl(348,98%,50%)] text-white"
         >
           <Film className="h-3.5 w-3.5" /> MP4 No Watermark
@@ -84,7 +84,7 @@ const ResultCard = ({ result }: { result: TikTokResult }) => (
         <Button
           size="sm"
           variant="secondary"
-          onClick={() => openDownload(result.download_url_watermark)}
+          onClick={() => openDownload(result.download_url_watermark, result.title, "mp4")}
           className="gap-1.5"
         >
           <Film className="h-3.5 w-3.5" /> MP4 With Watermark
@@ -92,7 +92,7 @@ const ResultCard = ({ result }: { result: TikTokResult }) => (
         <Button
           size="sm"
           variant="secondary"
-          onClick={() => openDownload(result.download_url_mp3)}
+          onClick={() => openDownload(result.download_url_mp3, result.title, "mp3")}
           className="gap-1.5"
         >
           <Music className="h-3.5 w-3.5" /> MP3 Audio
