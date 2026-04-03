@@ -164,9 +164,11 @@ async function fetchViaEmbed(shortcode: string, isReel: boolean) {
 
 // ── Scrape main page og: tags (fallback) ──
 async function fetchViaOgTags(shortcode: string, isReel: boolean) {
-  const pageUrl = isReel
-    ? `https://www.instagram.com/reel/${shortcode}/`
-    : `https://www.instagram.com/p/${shortcode}/`;
+  // Always try /p/ first since it has og:tags even for reels
+  const urlsToTry = [
+    `https://www.instagram.com/p/${shortcode}/`,
+    ...(isReel ? [`https://www.instagram.com/reel/${shortcode}/`] : []),
+  ];
 
   const res = await fetch(pageUrl, {
     headers: {
