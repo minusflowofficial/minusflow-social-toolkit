@@ -33,9 +33,18 @@ interface BulkEntry {
 }
 
 // ── helpers ──
-function triggerDownload(mediaUrl: string, _filename: string) {
-  // Instagram CDN blocks server-side proxy; open directly in new tab
-  window.open(mediaUrl, "_blank");
+function buildProxyUrl(mediaUrl: string, filename: string) {
+  const params = new URLSearchParams({ url: mediaUrl, filename });
+  return `${FUNCTION_BASE}?${params}`;
+}
+
+function triggerDownload(mediaUrl: string, filename: string) {
+  // Use hidden iframe for direct download via proxy
+  const iframe = document.createElement("iframe");
+  iframe.style.display = "none";
+  iframe.src = buildProxyUrl(mediaUrl, filename);
+  document.body.appendChild(iframe);
+  setTimeout(() => iframe.remove(), 30000);
 }
 
 async function fetchMedia(url: string): Promise<SingleResult> {
