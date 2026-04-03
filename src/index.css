@@ -1,0 +1,203 @@
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 220 20% 5%;
+    --foreground: 210 20% 92%;
+
+    --card: 220 18% 8%;
+    --card-foreground: 210 20% 92%;
+
+    --popover: 220 18% 8%;
+    --popover-foreground: 210 20% 92%;
+
+    --primary: 0 85% 55%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 220 16% 14%;
+    --secondary-foreground: 210 20% 85%;
+
+    --muted: 220 14% 12%;
+    --muted-foreground: 215 12% 50%;
+
+    --accent: 0 75% 50%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 220 14% 15%;
+    --input: 220 14% 15%;
+    --ring: 0 85% 55%;
+
+    --radius: 0.75rem;
+
+    --sidebar-background: 220 18% 10%;
+    --sidebar-foreground: 210 20% 85%;
+    --sidebar-primary: 0 85% 55%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 220 16% 16%;
+    --sidebar-accent-foreground: 210 20% 85%;
+    --sidebar-border: 220 14% 18%;
+    --sidebar-ring: 0 85% 55%;
+
+    --gradient-primary: linear-gradient(135deg, hsl(0, 85%, 55%), hsl(15, 90%, 55%));
+    --gradient-card: linear-gradient(145deg, hsl(220, 18%, 10%), hsl(220, 18%, 6%));
+    --shadow-glow: 0 0 40px -10px hsl(0 85% 55% / 0.3);
+    --shadow-glow-strong: 0 0 60px -10px hsl(0 85% 55% / 0.5);
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans;
+    font-family: 'Inter', sans-serif;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Space Grotesk', sans-serif;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
+/* Glassmorphism */
+.glass {
+  background: hsl(220 18% 8% / 0.6);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid hsl(220 14% 18% / 0.5);
+}
+
+.glass-strong {
+  background: hsl(220 18% 8% / 0.8);
+  backdrop-filter: blur(30px);
+  -webkit-backdrop-filter: blur(30px);
+  border: 1px solid hsl(220 14% 20% / 0.6);
+}
+
+/* Neon glow input */
+@keyframes neon-pulse {
+  0%, 100% { box-shadow: 0 0 5px hsl(0 85% 55% / 0.3), 0 0 20px hsl(0 85% 55% / 0.1); }
+  50% { box-shadow: 0 0 10px hsl(0 85% 55% / 0.5), 0 0 40px hsl(0 85% 55% / 0.2); }
+}
+
+.input-glow:focus-within {
+  animation: neon-pulse 2s ease-in-out infinite;
+}
+
+/* Light sweep on paste */
+@keyframes light-sweep {
+  0% { background-position: -200% center; }
+  100% { background-position: 200% center; }
+}
+
+.light-sweep {
+  background-image: linear-gradient(
+    90deg,
+    transparent 0%,
+    hsl(0 85% 55% / 0.15) 45%,
+    hsl(0 85% 55% / 0.25) 50%,
+    hsl(0 85% 55% / 0.15) 55%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  animation: light-sweep 0.6s ease-out;
+}
+
+/* Button pulse */
+@keyframes soft-pulse {
+  0%, 100% { box-shadow: 0 0 15px hsl(0 85% 55% / 0.2); }
+  50% { box-shadow: 0 0 25px hsl(0 85% 55% / 0.4); }
+}
+
+.btn-pulse {
+  animation: soft-pulse 2.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Ripple */
+@keyframes ripple {
+  to { transform: scale(4); opacity: 0; }
+}
+
+.ripple-effect {
+  position: relative;
+  overflow: hidden;
+}
+
+.ripple-effect .ripple {
+  position: absolute;
+  border-radius: 50%;
+  background: hsl(0 0% 100% / 0.25);
+  transform: scale(0);
+  animation: ripple 0.6s linear;
+  pointer-events: none;
+}
+
+/* Breathing border */
+@keyframes breathing {
+  0%, 100% { border-color: hsl(0 85% 55% / 0.3); }
+  50% { border-color: hsl(0 85% 55% / 0.7); }
+}
+
+.breathing-border {
+  animation: breathing 3s ease-in-out infinite;
+}
+
+/* Shimmer loading */
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.shimmer {
+  background: linear-gradient(
+    90deg,
+    hsl(220 14% 12%) 25%,
+    hsl(220 14% 18%) 50%,
+    hsl(220 14% 12%) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+}
+
+/* Background gradient shift */
+@keyframes gradient-shift {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+
+.bg-animate {
+  background: linear-gradient(135deg, hsl(220 20% 5%), hsl(230 22% 8%), hsl(220 20% 4%));
+  background-size: 400% 400%;
+  animation: gradient-shift 15s ease infinite;
+}
+
+/* Tap feedback for mobile */
+@media (hover: none) {
+  .tap-feedback:active {
+    transform: scale(0.97);
+    transition: transform 0.1s ease;
+  }
+}
+
+/* Success pulse */
+@keyframes success-pulse {
+  0% { box-shadow: 0 0 0 0 hsl(120 60% 50% / 0.4); }
+  70% { box-shadow: 0 0 0 10px hsl(120 60% 50% / 0); }
+  100% { box-shadow: 0 0 0 0 hsl(120 60% 50% / 0); }
+}
+
+.success-pulse {
+  animation: success-pulse 0.6s ease-out;
+}
