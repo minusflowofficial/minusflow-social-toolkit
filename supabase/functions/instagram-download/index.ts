@@ -170,44 +170,45 @@ async function fetchViaOgTags(shortcode: string, isReel: boolean) {
     ...(isReel ? [`https://www.instagram.com/reel/${shortcode}/`] : []),
   ];
 
-  const res = await fetch(pageUrl, {
-    headers: {
-      "User-Agent": UA,
-      Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-      "Accept-Language": "en-US,en;q=0.5",
-      "Sec-Fetch-Mode": "navigate",
-      "Sec-Fetch-Site": "none",
-    },
-  });
-  console.log("OG page status:", res.status, "url:", pageUrl);
-  if (!res.ok) { await res.text(); return null; }
-  const html = await res.text();
-  console.log("OG page len:", html.length, "has og:image:", html.includes('og:image'), "has og:video:", html.includes('og:video'));
+  for (const pageUrl of urlsToTry) {
+    const res = await fetch(pageUrl, {
+      headers: {
+        "User-Agent": UA,
+        Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        "Accept-Language": "en-US,en;q=0.5",
+        "Sec-Fetch-Mode": "navigate",
+        "Sec-Fetch-Site": "none",
+      },
+    });
+    if (!res.ok) { await res.text(); continue; }
+    const html = await res.text();
 
-  const items: Array<{ type: string; url: string; thumbnail: string }> = [];
+    const items: Array<{ type: string; url: string; thumbnail: string }> = [];
 
-  const ogVideo = html.match(/property="og:video(?::secure_url)?"\s+content="([^"]+)"/);
-  const ogImage = html.match(/property="og:image"\s+content="([^"]+)"/);
-  const ogType = html.match(/property="og:type"\s+content="([^"]+)"/)?.[1] || "";
+    const ogVideo = html.match(/property="og:video(?::secure_url)?"\s+content="([^"]+)"/);
+    const ogImage = html.match(/property="og:image"\s+content="([^"]+)"/);
+    const ogType = html.match(/property="og:type"\s+content="([^"]+)"/)?.[1] || "";
 
-  const typeIsVideo = isReel || ogType.includes("video") || !!ogVideo?.[1];
+    const typeIsVideo = isReel || ogType.includes("video") || !!ogVideo?.[1];
 
-  if (ogVideo?.[1]) {
-    items.push({ type: "video", url: decodeHtml(ogVideo[1]), thumbnail: ogImage?.[1] ? decodeHtml(ogImage[1]) : "" });
-  } else if (ogImage?.[1]) {
-    items.push({ type: typeIsVideo ? "video" : "image", url: decodeHtml(ogImage[1]), thumbnail: decodeHtml(ogImage[1]) });
+    if (ogVideo?.[1]) {
+      items.push({ type: "video", url: decodeHtml(ogVideo[1]), thumbnail: ogImage?.[1] ? decodeHtml(ogImage[1]) : "" });
+    } else if (ogImage?.[1]) {
+      items.push({ type: typeIsVideo ? "video" : "image", url: decodeHtml(ogImage[1]), thumbnail: decodeHtml(ogImage[1]) });
+    }
+
+    if (items.length === 0) continue;
+
+    const authorMatch = html.match(/property="og:description"\s+content="[^"]*@([A-Za-z0-9_.]+)/);
+    return {
+      success: true,
+      media_count: items.length,
+      items,
+      author: authorMatch?.[1] || "",
+      caption: "",
+    };
   }
-
-  if (items.length === 0) return null;
-
-  const authorMatch = html.match(/property="og:description"\s+content="[^"]*@([A-Za-z0-9_.]+)/);
-  return {
-    success: true,
-    media_count: items.length,
-    items,
-    author: authorMatch?.[1] || "",
-    caption: "",
-  };
+  return null;
 }
 
 // ── oEmbed (last resort) ──
