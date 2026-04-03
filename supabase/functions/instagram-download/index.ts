@@ -17,7 +17,7 @@ function jsonResponse(data: unknown, status = 200) {
   });
 }
 
-// --------------- Proxy GET (branded download) ---------------
+// ── Proxy GET (branded download) ──
 async function handleProxy(req: Request) {
   const url = new URL(req.url);
   const mediaUrl = url.searchParams.get("url");
@@ -27,7 +27,11 @@ async function handleProxy(req: Request) {
 
   try {
     const upstream = await fetch(mediaUrl, {
-      headers: { "User-Agent": UA },
+      headers: {
+        "User-Agent": UA,
+        Referer: "https://www.instagram.com/",
+      },
+      redirect: "follow",
     });
     if (!upstream.ok)
       return jsonResponse({ error: "Upstream fetch failed" }, upstream.status);
@@ -46,115 +50,206 @@ async function handleProxy(req: Request) {
   }
 }
 
-// --------------- Scrape via saveig.app ---------------
-async function fetchFromSaveig(igUrl: string) {
-  // Step 1 — load homepage to get any tokens/cookies
-  const homeRes = await fetch("https://saveig.app/en", {
-    headers: { "User-Agent": UA, Accept: "text/html" },
-  });
-  const homeCookies = homeRes.headers.get("set-cookie") || "";
-  const homeHtml = await homeRes.text();
+// ── Resolve short URL ──
+async function resolveUrl(url: string): Promise<string> {
+  if (url.includes("/p/") || url.includes("/reel/") || url.includes("/tv/")) {
+    return url;
+  }
+  try {
+    const res = await fetch(url, {
+      method: "HEAD",
+      headers: { "User-Agent": UA },
+      redirect: "follow",
+    });
+    return res.url || url;
+  } catch {
+    return url;
+  }
+}
 
-  // extract token if present
-  const tokenMatch = homeHtml.match(
-    /name="token"\s+value="([^"]+)"/
-  );
-  const token = tokenMatch?.[1] || "";
+// ── Extract shortcode from URL ──
+function getShortcode(url: string): string | null {
+  const m = url.match(/\/(p|reel|tv)\/([A-Za-z0-9_-]+)/);
+  return m?.[2] || null;
+}
 
-  // Step 2 — submit URL
-  const formBody = new URLSearchParams({
-    url: igUrl,
-    token,
-  });
+// ── Method 1: Instagram GraphQL query ──
+async function fetchViaGraphQL(shortcode: string) {
+  const graphqlUrl = `https://www.instagram.com/graphql/query/?query_hash=b3055c01b4b222b8a47dc12b090e4e64&variables=${encodeURIComponent(
+    JSON.stringify({ shortcode, child_comment_count: 0, fetch_comment_count: 0, parent_comment_count: 0, has_threaded_comments: false })
+  )}`;
 
-  const apiRes = await fetch("https://saveig.app/api/ajaxSearch", {
-    method: "POST",
+  const res = await fetch(graphqlUrl, {
     headers: {
       "User-Agent": UA,
-      "Content-Type": "application/x-www-form-urlencoded",
-      Origin: "https://saveig.app",
-      Referer: "https://saveig.app/en",
-      Cookie: homeCookies.split(",").map((c) => c.split(";")[0]).join("; "),
+      Accept: "*/*",
+      "X-IG-App-ID": "936619743392459",
+      "X-Requested-With": "XMLHttpRequest",
+      Referer: `https://www.instagram.com/p/${shortcode}/`,
     },
-    body: formBody,
   });
 
-  const json = await apiRes.json();
-  return json;
+  if (!res.ok) return null;
+  const json = await res.json();
+  const media = json?.data?.shortcode_media;
+  if (!media) return null;
+
+  return parseGraphQLMedia(media);
 }
 
-function parseItems(json: any) {
-  // saveig returns { status: "ok", data: "<html>" }
-  if (!json || json.status !== "ok" || !json.data) return null;
+function parseGraphQLMedia(media: any) {
+  const items: Array<{ type: string; url: string; thumbnail: string }> = [];
 
-  const html: string = json.data;
-  const items: Array<{
-    type: string;
-    url: string;
-    thumbnail: string;
-  }> = [];
-
-  // Parse download items from HTML
-  // Pattern: download-items with img thumbnails and download links
-  const blocks = html.split(/class="download-items__btn/);
-
-  // Extract all download links
-  const linkMatches = [
-    ...html.matchAll(
-      /href="(https?:\/\/[^"]+)"[^>]*>\s*(?:<[^>]*>)*\s*Download\s*(Video|Photo|Image|Reel)?/gi
-    ),
-  ];
-
-  // Extract thumbnails
-  const thumbMatches = [
-    ...html.matchAll(/<img[^>]+src="(https?:\/\/[^"]+)"/g),
-  ];
-
-  if (linkMatches.length > 0) {
-    linkMatches.forEach((m, i) => {
-      const url = m[1];
-      const typeHint = (m[2] || "").toLowerCase();
-      const isVideo =
-        typeHint.includes("video") ||
-        typeHint.includes("reel") ||
-        url.includes(".mp4") ||
-        url.includes("video");
+  if (media.edge_sidecar_to_children?.edges) {
+    // Carousel
+    for (const edge of media.edge_sidecar_to_children.edges) {
+      const node = edge.node;
       items.push({
-        type: isVideo ? "video" : "image",
-        url,
-        thumbnail: thumbMatches[i]?.[1] || "",
+        type: node.is_video ? "video" : "image",
+        url: node.is_video ? node.video_url : node.display_url,
+        thumbnail: node.display_url,
       });
+    }
+  } else {
+    items.push({
+      type: media.is_video ? "video" : "image",
+      url: media.is_video ? media.video_url : media.display_url,
+      thumbnail: media.display_url,
     });
   }
 
-  // Fallback: try to get any links that look like media
-  if (items.length === 0) {
-    const allLinks = [
-      ...html.matchAll(/href="(https?:\/\/[^"]*(?:\.mp4|\.jpg|\.png|cdninstagram|scontent)[^"]*)"/g),
-    ];
-    allLinks.forEach((m) => {
-      const url = m[1];
-      const isVideo = url.includes(".mp4") || url.includes("video");
-      items.push({
-        type: isVideo ? "video" : "image",
-        url,
-        thumbnail: "",
-      });
+  return {
+    success: true,
+    media_count: items.length,
+    items,
+    author: media.owner?.username || "",
+    caption:
+      media.edge_media_to_caption?.edges?.[0]?.node?.text?.slice(0, 200) || "",
+  };
+}
+
+// ── Method 2: Fetch page HTML and extract embedded JSON ──
+async function fetchViaPageHTML(url: string, shortcode: string) {
+  const pageUrl = `https://www.instagram.com/p/${shortcode}/`;
+  const res = await fetch(pageUrl, {
+    headers: {
+      "User-Agent": UA,
+      Accept:
+        "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+      "Accept-Language": "en-US,en;q=0.5",
+      "Sec-Fetch-Mode": "navigate",
+    },
+  });
+
+  if (!res.ok) return null;
+  const html = await res.text();
+
+  // Try to find JSON data in the page
+  // Pattern 1: window.__additionalDataLoaded
+  let match = html.match(
+    /window\.__additionalDataLoaded\([^,]+,\s*({.+?})\s*\);/s
+  );
+  if (match?.[1]) {
+    try {
+      const data = JSON.parse(match[1]);
+      const media =
+        data.graphql?.shortcode_media ||
+        data.items?.[0];
+      if (media) return parseGraphQLMedia(media);
+    } catch {}
+  }
+
+  // Pattern 2: window._sharedData
+  match = html.match(/window\._sharedData\s*=\s*({.+?});<\/script>/s);
+  if (match?.[1]) {
+    try {
+      const data = JSON.parse(match[1]);
+      const media =
+        data.entry_data?.PostPage?.[0]?.graphql?.shortcode_media;
+      if (media) return parseGraphQLMedia(media);
+    } catch {}
+  }
+
+  // Pattern 3: extract og:video or og:image meta tags
+  const items: Array<{ type: string; url: string; thumbnail: string }> = [];
+
+  const videoMatch = html.match(
+    /property="og:video(?::secure_url)?"\s+content="([^"]+)"/
+  );
+  const imageMatch = html.match(
+    /property="og:image"\s+content="([^"]+)"/
+  );
+
+  if (videoMatch?.[1]) {
+    items.push({
+      type: "video",
+      url: videoMatch[1],
+      thumbnail: imageMatch?.[1] || "",
+    });
+  } else if (imageMatch?.[1]) {
+    items.push({
+      type: "image",
+      url: imageMatch[1],
+      thumbnail: imageMatch[1],
     });
   }
 
-  return items.length > 0 ? items : null;
+  if (items.length > 0) {
+    const authorMatch = html.match(
+      /property="og:description"\s+content="[^"]*@([A-Za-z0-9_.]+)/
+    );
+    return {
+      success: true,
+      media_count: items.length,
+      items,
+      author: authorMatch?.[1] || "",
+      caption: "",
+    };
+  }
+
+  return null;
 }
 
-// --------------- Main handler ---------------
+// ── Method 3: Instagram oEmbed API (image only fallback) ──
+async function fetchViaOEmbed(url: string) {
+  const oembedUrl = `https://graph.facebook.com/v18.0/instagram_oembed?url=${encodeURIComponent(
+    url
+  )}&access_token=IGQWRPZA`;
+
+  // oEmbed doesn't need auth for basic info. Try the public endpoint.
+  const res = await fetch(
+    `https://api.instagram.com/oembed/?url=${encodeURIComponent(url)}`,
+    { headers: { "User-Agent": UA } }
+  );
+
+  if (!res.ok) return null;
+  const data = await res.json();
+
+  if (data.thumbnail_url) {
+    return {
+      success: true,
+      media_count: 1,
+      items: [
+        {
+          type: "image",
+          url: data.thumbnail_url,
+          thumbnail: data.thumbnail_url,
+        },
+      ],
+      author: data.author_name || "",
+      caption: data.title || "",
+    };
+  }
+  return null;
+}
+
+// ── Main handler ──
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS")
     return new Response("ok", { headers: corsHeaders });
 
-  // Proxy GET
   if (req.method === "GET" || req.method === "HEAD") return handleProxy(req);
 
-  // POST — extract media info
   try {
     const { url } = await req.json();
     if (!url || typeof url !== "string")
@@ -166,23 +261,30 @@ Deno.serve(async (req) => {
         400
       );
 
-    const raw = await fetchFromSaveig(url);
-    const items = parseItems(raw);
+    const resolved = await resolveUrl(url);
+    const shortcode = getShortcode(resolved);
 
-    if (!items)
+    if (!shortcode)
+      return jsonResponse(
+        { error: "Could not extract post ID from URL. Use a direct post/reel link." },
+        400
+      );
+
+    // Try methods in order
+    let result = await fetchViaGraphQL(shortcode);
+    if (!result) result = await fetchViaPageHTML(resolved, shortcode);
+    if (!result) result = await fetchViaOEmbed(resolved);
+
+    if (!result)
       return jsonResponse(
         {
           error:
-            "Could not extract media. The post may be private or the URL is invalid.",
+            "Could not extract media. The post may be private or login-required.",
         },
         404
       );
 
-    return jsonResponse({
-      success: true,
-      media_count: items.length,
-      items,
-    });
+    return jsonResponse(result);
   } catch (err) {
     return jsonResponse(
       { error: (err as Error).message || "Internal server error" },
