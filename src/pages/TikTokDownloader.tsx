@@ -304,6 +304,26 @@ const BulkTab = () => {
           </div>
         ))}
       </div>
+
+      {/* Download All button */}
+      {!processing && items.some((item) => item.status === "success" && item.result?.download_url_no_watermark) && (
+        <Button
+          onClick={() => {
+            const successful = items.filter(
+              (item) => item.status === "success" && item.result?.download_url_no_watermark
+            );
+            successful.forEach((item, idx) => {
+              setTimeout(() => {
+                openDownload(item.result!.download_url_no_watermark, item.result!.title, "mp4");
+              }, idx * 800);
+            });
+            toast.success(`Downloading ${successful.length} videos...`);
+          }}
+          className="w-full h-12 rounded-xl font-semibold bg-[hsl(348,98%,57%)] hover:bg-[hsl(348,98%,50%)] text-white gap-2"
+        >
+          <DownloadCloud className="h-5 w-5" /> Download All ({items.filter((i) => i.status === "success").length} Videos)
+        </Button>
+      )}
     </div>
   );
 };
