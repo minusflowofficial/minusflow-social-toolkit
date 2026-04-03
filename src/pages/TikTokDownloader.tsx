@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
-import { Download, Loader2, Music, Film, AlertCircle } from "lucide-react";
+import { Download, Loader2, Music, Film, AlertCircle, DownloadCloud } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
@@ -35,12 +35,21 @@ const downloadVideo = async (url: string): Promise<TikTokResult> => {
   return data;
 };
 
-const openDownload = (url: string) => {
-  if (!url) {
+const sanitizeFilename = (name: string) =>
+  name.replace(/[^a-zA-Z0-9_\-. ]/g, "").slice(0, 80) || "video";
+
+const buildProxyUrl = (mediaUrl: string, title: string, ext: string) => {
+  const base = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/tiktok-download`;
+  const filename = `MinusFlow.net_${sanitizeFilename(title)}.${ext}`;
+  return `${base}?url=${encodeURIComponent(mediaUrl)}&filename=${encodeURIComponent(filename)}`;
+};
+
+const openDownload = (mediaUrl: string, title = "video", ext = "mp4") => {
+  if (!mediaUrl) {
     toast.error("Download link not available");
     return;
   }
-  window.open(url, "_blank", "noopener,noreferrer");
+  window.open(buildProxyUrl(mediaUrl, title, ext), "_blank", "noopener,noreferrer");
 };
 
 /* ─── Result Card ─── */
@@ -67,7 +76,7 @@ const ResultCard = ({ result }: { result: TikTokResult }) => (
       <div className="flex flex-wrap gap-2">
         <Button
           size="sm"
-          onClick={() => openDownload(result.download_url_no_watermark)}
+          onClick={() => openDownload(result.download_url_no_watermark, result.title, "mp4")}
           className="gap-1.5 bg-[hsl(348,98%,57%)] hover:bg-[hsl(348,98%,50%)] text-white"
         >
           <Film className="h-3.5 w-3.5" /> MP4 No Watermark
@@ -75,7 +84,7 @@ const ResultCard = ({ result }: { result: TikTokResult }) => (
         <Button
           size="sm"
           variant="secondary"
-          onClick={() => openDownload(result.download_url_watermark)}
+          onClick={() => openDownload(result.download_url_watermark, result.title, "mp4")}
           className="gap-1.5"
         >
           <Film className="h-3.5 w-3.5" /> MP4 With Watermark
@@ -83,7 +92,7 @@ const ResultCard = ({ result }: { result: TikTokResult }) => (
         <Button
           size="sm"
           variant="secondary"
-          onClick={() => openDownload(result.download_url_mp3)}
+          onClick={() => openDownload(result.download_url_mp3, result.title, "mp3")}
           className="gap-1.5"
         >
           <Music className="h-3.5 w-3.5" /> MP3 Audio
@@ -295,6 +304,26 @@ const BulkTab = () => {
           </div>
         ))}
       </div>
+
+      {/* Download All button */}
+      {!processing && items.some((item) => item.status === "success" && item.result?.download_url_no_watermark) && (
+        <Button
+          onClick={() => {
+            const successful = items.filter(
+              (item) => item.status === "success" && item.result?.download_url_no_watermark
+            );
+            successful.forEach((item, idx) => {
+              setTimeout(() => {
+                openDownload(item.result!.download_url_no_watermark, item.result!.title, "mp4");
+              }, idx * 800);
+            });
+            toast.success(`Downloading ${successful.length} videos...`);
+          }}
+          className="w-full h-12 rounded-xl font-semibold bg-[hsl(348,98%,57%)] hover:bg-[hsl(348,98%,50%)] text-white gap-2"
+        >
+          <DownloadCloud className="h-5 w-5" /> Download All ({items.filter((i) => i.status === "success").length} Videos)
+        </Button>
+      )}
     </div>
   );
 };

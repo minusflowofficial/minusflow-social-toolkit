@@ -4,7 +4,7 @@ const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
     "authorization, x-client-info, apikey, content-type",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
+  "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
 };
 
 const UA =
@@ -102,6 +102,44 @@ function parseResponse(html: string) {
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
+  }
+
+  const reqUrl = new URL(req.url);
+
+  // GET /tiktok-download?url=...&filename=... → proxy the media with branded filename
+  if (req.method === "GET" || req.method === "HEAD") {
+    const mediaUrl = reqUrl.searchParams.get("url");
+    const filename = reqUrl.searchParams.get("filename") || "MinusFlow.net_video.mp4";
+    if (!mediaUrl) {
+      return new Response(JSON.stringify({ error: "Missing url param" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    try {
+      const upstream = await fetch(mediaUrl, {
+        headers: { "User-Agent": UA },
+      });
+      if (!upstream.ok) {
+        return new Response(JSON.stringify({ error: "Upstream fetch failed" }), {
+          status: upstream.status,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      const ct = upstream.headers.get("content-type") || "application/octet-stream";
+      return new Response(upstream.body, {
+        headers: {
+          ...corsHeaders,
+          "Content-Type": ct,
+          "Content-Disposition": `attachment; filename="${filename}"`,
+        },
+      });
+    } catch (e) {
+      return new Response(JSON.stringify({ error: e.message }), {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
   }
 
   try {
