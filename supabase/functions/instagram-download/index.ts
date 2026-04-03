@@ -10,6 +10,10 @@ const corsHeaders = {
 const UA =
   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36";
 
+function decodeHtmlEntities(s: string): string {
+  return s.replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"');
+}
+
 function jsonResponse(data: unknown, status = 200) {
   return new Response(JSON.stringify(data), {
     status,
@@ -25,8 +29,9 @@ async function handleProxy(req: Request) {
 
   if (!mediaUrl) return jsonResponse({ error: "Missing url param" }, 400);
 
+  const decodedMediaUrl = decodeHtmlEntities(mediaUrl);
   try {
-    const upstream = await fetch(mediaUrl, {
+    const upstream = await fetch(decodedMediaUrl, {
       headers: {
         "User-Agent": UA,
         Referer: "https://www.instagram.com/",
@@ -183,14 +188,14 @@ async function fetchViaPageHTML(url: string, shortcode: string) {
   if (videoMatch?.[1]) {
     items.push({
       type: "video",
-      url: videoMatch[1],
-      thumbnail: imageMatch?.[1] || "",
+      url: decodeHtmlEntities(videoMatch[1]),
+      thumbnail: imageMatch?.[1] ? decodeHtmlEntities(imageMatch[1]) : "",
     });
   } else if (imageMatch?.[1]) {
     items.push({
       type: "image",
-      url: imageMatch[1],
-      thumbnail: imageMatch[1],
+      url: decodeHtmlEntities(imageMatch[1]),
+      thumbnail: decodeHtmlEntities(imageMatch[1]),
     });
   }
 
