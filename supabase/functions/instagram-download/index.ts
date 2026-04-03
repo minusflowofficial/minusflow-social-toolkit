@@ -188,14 +188,14 @@ async function fetchViaPageHTML(url: string, shortcode: string) {
   if (videoMatch?.[1]) {
     items.push({
       type: "video",
-      url: videoMatch[1],
-      thumbnail: imageMatch?.[1] || "",
+      url: decodeHtmlEntities(videoMatch[1]),
+      thumbnail: imageMatch?.[1] ? decodeHtmlEntities(imageMatch[1]) : "",
     });
   } else if (imageMatch?.[1]) {
     items.push({
       type: "image",
-      url: imageMatch[1],
-      thumbnail: imageMatch[1],
+      url: decodeHtmlEntities(imageMatch[1]),
+      thumbnail: decodeHtmlEntities(imageMatch[1]),
     });
   }
 
