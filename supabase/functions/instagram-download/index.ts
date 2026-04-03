@@ -29,6 +29,7 @@ async function handleProxy(req: Request) {
 
   if (!mediaUrl) return jsonResponse({ error: "Missing url param" }, 400);
 
+  const decodedMediaUrl = decodeHtmlEntities(mediaUrl);
   try {
     const upstream = await fetch(mediaUrl, {
       headers: {
