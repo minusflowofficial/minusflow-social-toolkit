@@ -94,6 +94,7 @@ const ResultCard = ({ result }: { result: TikTokResult }) => (
         <Button
           size="sm"
           variant="secondary"
+          disabled={!result.download_url_watermark}
           onClick={() => openDownload(result.download_url_watermark, result.title, "mp4")}
           className="gap-1.5"
         >
@@ -102,6 +103,7 @@ const ResultCard = ({ result }: { result: TikTokResult }) => (
         <Button
           size="sm"
           variant="secondary"
+          disabled={!result.download_url_mp3}
           onClick={() => openDownload(result.download_url_mp3, result.title, "mp3")}
           className="gap-1.5"
         >
