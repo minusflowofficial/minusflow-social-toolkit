@@ -11,6 +11,7 @@ import Terms from "./pages/Terms.tsx";
 import DMCA from "./pages/DMCA.tsx";
 import Disclaimer from "./pages/Disclaimer.tsx";
 import TikTokDownloader from "./pages/TikTokDownloader.tsx";
+import InstagramDownloader from "./pages/InstagramDownloader.tsx";
 import NotFound from "./pages/NotFound.tsx";
 
 const queryClient = new QueryClient();
