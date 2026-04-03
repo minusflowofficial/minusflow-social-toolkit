@@ -169,10 +169,18 @@ async function fetchViaOgTags(shortcode: string, isReel: boolean) {
     : `https://www.instagram.com/p/${shortcode}/`;
 
   const res = await fetch(pageUrl, {
-    headers: { "User-Agent": UA, Accept: "text/html", "Accept-Language": "en-US,en;q=0.5" },
+    headers: {
+      "User-Agent": UA,
+      Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+      "Accept-Language": "en-US,en;q=0.5",
+      "Sec-Fetch-Mode": "navigate",
+      "Sec-Fetch-Site": "none",
+    },
   });
+  console.log("OG page status:", res.status, "url:", pageUrl);
   if (!res.ok) { await res.text(); return null; }
   const html = await res.text();
+  console.log("OG page len:", html.length, "has og:image:", html.includes('og:image'), "has og:video:", html.includes('og:video'));
 
   const items: Array<{ type: string; url: string; thumbnail: string }> = [];
 
