@@ -44,12 +44,22 @@ const buildProxyUrl = (mediaUrl: string, title: string, ext: string) => {
   return `${base}?url=${encodeURIComponent(mediaUrl)}&filename=${encodeURIComponent(filename)}`;
 };
 
+const triggerIframeDownload = (url: string) => {
+  const iframe = document.createElement("iframe");
+  iframe.style.display = "none";
+  iframe.src = url;
+  document.body.appendChild(iframe);
+  setTimeout(() => iframe.remove(), 60000);
+};
+
 const openDownload = (mediaUrl: string, title = "video", ext = "mp4") => {
   if (!mediaUrl) {
     toast.error("Download link not available");
     return;
   }
-  window.open(buildProxyUrl(mediaUrl, title, ext), "_blank", "noopener,noreferrer");
+  const proxyUrl = buildProxyUrl(mediaUrl, title, ext);
+  triggerIframeDownload(proxyUrl);
+  toast.success("Download started!");
 };
 
 /* ─── Result Card ─── */
@@ -84,6 +94,7 @@ const ResultCard = ({ result }: { result: TikTokResult }) => (
         <Button
           size="sm"
           variant="secondary"
+          disabled={!result.download_url_watermark}
           onClick={() => openDownload(result.download_url_watermark, result.title, "mp4")}
           className="gap-1.5"
         >
@@ -92,6 +103,7 @@ const ResultCard = ({ result }: { result: TikTokResult }) => (
         <Button
           size="sm"
           variant="secondary"
+          disabled={!result.download_url_mp3}
           onClick={() => openDownload(result.download_url_mp3, result.title, "mp3")}
           className="gap-1.5"
         >
@@ -314,8 +326,9 @@ const BulkTab = () => {
             );
             successful.forEach((item, idx) => {
               setTimeout(() => {
-                openDownload(item.result!.download_url_no_watermark, item.result!.title, "mp4");
-              }, idx * 800);
+                const proxyUrl = buildProxyUrl(item.result!.download_url_no_watermark, item.result!.title, "mp4");
+                triggerIframeDownload(proxyUrl);
+              }, idx * 1500);
             });
             toast.success(`Downloading ${successful.length} videos...`);
           }}
