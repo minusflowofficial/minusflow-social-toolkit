@@ -29,6 +29,7 @@ const App = () => (
           <Route path="/terms" element={<Terms />} />
           <Route path="/dmca" element={<DMCA />} />
           <Route path="/disclaimer" element={<Disclaimer />} />
+          <Route path="/tiktok" element={<TikTokDownloader />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
