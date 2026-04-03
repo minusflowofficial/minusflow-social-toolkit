@@ -97,8 +97,9 @@ async function fetchViaEmbed(shortcode: string) {
       "Accept-Language": "en-US,en;q=0.9",
     },
   });
-  if (!res.ok) { await res.text(); return null; }
+  if (!res.ok) { console.log("Embed failed:", res.status); await res.text(); return null; }
   const html = await res.text();
+  console.log("Embed HTML length:", html.length, "has video_url:", html.includes("video_url"), "has display_url:", html.includes("display_url"), "first 500:", html.substring(0, 500));
 
   const items: Array<{ type: string; url: string; thumbnail: string }> = [];
 
