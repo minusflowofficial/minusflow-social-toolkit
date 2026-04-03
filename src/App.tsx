@@ -10,6 +10,7 @@ import Privacy from "./pages/Privacy.tsx";
 import Terms from "./pages/Terms.tsx";
 import DMCA from "./pages/DMCA.tsx";
 import Disclaimer from "./pages/Disclaimer.tsx";
+import TikTokDownloader from "./pages/TikTokDownloader.tsx";
 import NotFound from "./pages/NotFound.tsx";
 
 const queryClient = new QueryClient();
