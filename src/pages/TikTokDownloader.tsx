@@ -35,12 +35,21 @@ const downloadVideo = async (url: string): Promise<TikTokResult> => {
   return data;
 };
 
-const openDownload = (url: string) => {
-  if (!url) {
+const sanitizeFilename = (name: string) =>
+  name.replace(/[^a-zA-Z0-9_\-. ]/g, "").slice(0, 80) || "video";
+
+const buildProxyUrl = (mediaUrl: string, title: string, ext: string) => {
+  const base = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/tiktok-download`;
+  const filename = `MinusFlow.net_${sanitizeFilename(title)}.${ext}`;
+  return `${base}?url=${encodeURIComponent(mediaUrl)}&filename=${encodeURIComponent(filename)}`;
+};
+
+const openDownload = (mediaUrl: string, title = "video", ext = "mp4") => {
+  if (!mediaUrl) {
     toast.error("Download link not available");
     return;
   }
-  window.open(url, "_blank", "noopener,noreferrer");
+  window.open(buildProxyUrl(mediaUrl, title, ext), "_blank", "noopener,noreferrer");
 };
 
 /* ─── Result Card ─── */
