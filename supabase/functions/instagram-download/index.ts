@@ -31,7 +31,7 @@ async function handleProxy(req: Request) {
 
   const decodedMediaUrl = decodeHtmlEntities(mediaUrl);
   try {
-    const upstream = await fetch(mediaUrl, {
+    const upstream = await fetch(decodedMediaUrl, {
       headers: {
         "User-Agent": UA,
         Referer: "https://www.instagram.com/",
