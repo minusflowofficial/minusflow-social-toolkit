@@ -31,6 +31,7 @@ const App = () => (
           <Route path="/dmca" element={<DMCA />} />
           <Route path="/disclaimer" element={<Disclaimer />} />
           <Route path="/tiktok" element={<TikTokDownloader />} />
+          <Route path="/instagram" element={<InstagramDownloader />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

@@ -7,6 +7,7 @@ import { createPortal } from "react-dom";
 const downloaderLinks = [
   { to: "/", label: "YouTube Downloader" },
   { to: "/tiktok", label: "TikTok Downloader" },
+  { to: "/instagram", label: "Instagram Downloader" },
 ];
 
 const pageLinks = [
