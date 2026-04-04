@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
+import FormatCard from "@/components/FormatCard";
 
 const FUNCTION_BASE = `https://uphyqimrsclstdumeuwf.supabase.co/functions/v1/fetch-reel`;
 
@@ -204,23 +205,25 @@ const ResultCard = ({ result, index }: { result: FetchResult | null; index: numb
           <img src={result.thumbnail} alt="Reel thumbnail" className="h-auto w-full object-cover" />
         </div>
       )}
-      <div className="rounded-xl border border-white/5 bg-card/80 p-4 backdrop-blur space-y-3">
-        <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
-          <CheckCircle2 className="h-4 w-4 text-green-400" />
-          {result.download_links.length} download option{result.download_links.length > 1 ? "s" : ""} found
-        </div>
-        <div className="grid gap-2">
-          {result.download_links.map((link, i) => (
-            <Button
-              key={i}
-              onClick={() => triggerDownload(link.url, buildFilename(result, index, link.quality, link.format))}
-              className="w-full bg-gradient-to-r from-[#833ab4] via-[#fd1d1d] to-[#fcb045] text-white hover:opacity-90"
-            >
-              <Download className="mr-2 h-4 w-4" />
-              Download {link.quality} ({link.format.toUpperCase()})
-            </Button>
-          ))}
-        </div>
+      <div className="space-y-2">
+        {result.download_links.map((link, i) => (
+          <motion.div
+            key={i}
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 + i * 0.06, duration: 0.4, ease: [0.25, 0.46, 0.45, 0.94] }}
+          >
+            <FormatCard
+              format={link.quality}
+              resolution={link.quality}
+              fileSize="N/A"
+              extension={link.format}
+              downloadUrl={link.url}
+              fileName={buildFilename(result, index, link.quality, link.format)}
+              isRecommended={i === 0}
+            />
+          </motion.div>
+        ))}
       </div>
     </motion.div>
   );
