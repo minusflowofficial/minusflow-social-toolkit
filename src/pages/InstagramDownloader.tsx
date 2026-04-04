@@ -24,7 +24,28 @@ interface FetchResult {
   success: boolean;
   download_links?: DownloadLink[];
   thumbnail?: string;
+  title?: string;
+  hashtags?: string[];
   error?: string | null;
+}
+
+function sanitizeFilename(name: string) {
+  return name.replace(/[^a-zA-Z0-9_\-. #]/g, "").replace(/\s+/g, "_").slice(0, 120) || "reel";
+}
+
+function buildFilename(result: FetchResult, index: number, quality: string, format: string) {
+  let name = "MinusFlow.net";
+  const titlePart = result.title ? `_${sanitizeFilename(result.title)}` : `_reel_${index + 1}`;
+  name += titlePart;
+  if (result.hashtags?.length) {
+    const tags = result.hashtags.slice(0, 5).join("_");
+    // Only add if not already in title
+    if (!titlePart.includes(tags.slice(0, 10))) {
+      name += `_${sanitizeFilename(tags)}`;
+    }
+  }
+  name += `_${quality}.${format}`;
+  return name;
 }
 
 interface BulkEntry {

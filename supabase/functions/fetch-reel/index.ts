@@ -77,7 +77,6 @@ function parseLinks(section: string, fullHtml: string) {
   while ((m = anchorRegex.exec(section)) !== null) {
     const url = m[1].replace(/&amp;/g, "&");
     const text = m[2].replace(/<[^>]+>/g, "").trim();
-    // Try to find quality info
     const qualMatch = text.match(/(\d{3,4}p)/i);
     const quality = qualMatch ? qualMatch[1] : "HD";
     links.push({ quality, url, format: "mp4" });
@@ -100,6 +99,25 @@ function parseLinks(section: string, fullHtml: string) {
   );
   if (thumbMatch) thumbnail = thumbMatch[1].replace(/&amp;/g, "&");
 
+  // Extract title / caption from the page
+  let title = "";
+  // Try og:title or page title
+  const ogTitle = fullHtml.match(/property="og:title"\s+content="([^"]+)"/i);
+  if (ogTitle) {
+    title = ogTitle[1].replace(/&amp;/g, "&").replace(/&quot;/g, '"').replace(/&#039;/g, "'");
+  }
+  if (!title) {
+    const titleTag = fullHtml.match(/<title[^>]*>([^<]+)<\/title>/i);
+    if (titleTag) title = titleTag[1].trim();
+  }
+  // Try to find caption/description text near the download section
+  if (!title) {
+    const descMatch = fullHtml.match(/property="og:description"\s+content="([^"]+)"/i);
+    if (descMatch) title = descMatch[1].replace(/&amp;/g, "&");
+  }
+  // Extract hashtags from the title/caption
+  const hashtags = title.match(/#[A-Za-z0-9_\u0600-\u06FF]+/g) || [];
+
   if (links.length === 0) {
     return { success: false, error: "Could not extract download links. The reel may be private or removed." };
   }
@@ -112,7 +130,7 @@ function parseLinks(section: string, fullHtml: string) {
     return true;
   });
 
-  return { success: true, download_links: unique, thumbnail, error: null };
+  return { success: true, download_links: unique, thumbnail, title, hashtags, error: null };
 }
 
 Deno.serve(async (req) => {
