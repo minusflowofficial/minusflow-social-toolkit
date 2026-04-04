@@ -1,11 +1,16 @@
-import { useState } from "react";
-import { motion } from "framer-motion";
-import { Download, Loader2, AlertCircle, Instagram, CheckCircle2 } from "lucide-react";
+import { useState, useRef } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import {
+  Download, Loader2, AlertCircle, Instagram, CheckCircle2, XCircle,
+} from "lucide-react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import ScrollProgress from "@/components/ScrollProgress";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Progress } from "@/components/ui/progress";
+import { useToast } from "@/hooks/use-toast";
 
 const FUNCTION_BASE = `https://uphyqimrsclstdumeuwf.supabase.co/functions/v1/fetch-reel`;
 
@@ -22,6 +27,13 @@ interface FetchResult {
   error?: string | null;
 }
 
+interface BulkEntry {
+  url: string;
+  status: "pending" | "loading" | "success" | "error";
+  result?: FetchResult;
+  error?: string;
+}
+
 function triggerDownload(mediaUrl: string, filename: string) {
   const params = new URLSearchParams({ url: mediaUrl, filename });
   const iframe = document.createElement("iframe");
@@ -31,43 +43,27 @@ function triggerDownload(mediaUrl: string, filename: string) {
   setTimeout(() => iframe.remove(), 30000);
 }
 
-const InstagramDownloader = () => {
-  const [url, setUrl] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState<FetchResult | null>(null);
+async function fetchReel(url: string): Promise<FetchResult> {
+  const res = await fetch(FUNCTION_BASE, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ url }),
+  });
+  return res.json();
+}
 
-  const handleSubmit = async () => {
-    const trimmed = url.trim();
-    if (!trimmed) return;
-    setLoading(true);
-    setResult(null);
-    try {
-      const res = await fetch(FUNCTION_BASE, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ url: trimmed }),
-      });
-      const data: FetchResult = await res.json();
-      setResult(data);
-    } catch {
-      setResult({ success: false, error: "Something went wrong. Please try again." });
-    } finally {
-      setLoading(false);
-    }
-  };
+// ── Main Page ──
+const InstagramDownloader = () => {
+  const [tab, setTab] = useState<"single" | "bulk">("single");
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-[hsl(var(--background))]">
       <ScrollProgress />
       <Header />
 
-      <main className="relative z-10 mx-auto flex min-h-[70vh] max-w-xl flex-col items-center justify-center px-4 pb-20 pt-8">
+      <main className="relative z-10 mx-auto max-w-2xl px-4 pb-20 pt-8">
         {/* Hero */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mb-8 text-center"
-        >
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="mb-8 text-center">
           <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-[#833ab4] via-[#fd1d1d] to-[#fcb045]">
             <Instagram className="h-8 w-8 text-white" />
           </div>
@@ -82,100 +78,274 @@ const InstagramDownloader = () => {
           </p>
         </motion.div>
 
-        {/* Input */}
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="mb-6 w-full"
-        >
-          <div className="flex gap-3">
-            <Input
-              value={url}
-              onChange={(e) => setUrl(e.target.value)}
-              placeholder="https://www.instagram.com/reel/..."
-              className="flex-1 border-white/10 bg-card text-foreground placeholder:text-muted-foreground"
-              onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
-            />
-            <Button
-              onClick={handleSubmit}
-              disabled={loading || !url.trim()}
-              className="bg-gradient-to-r from-[#833ab4] via-[#fd1d1d] to-[#fcb045] px-6 text-white hover:opacity-90"
+        {/* Tabs */}
+        <div className="mb-6 flex gap-2 rounded-xl bg-card/60 p-1 backdrop-blur">
+          {(["single", "bulk"] as const).map((t) => (
+            <button
+              key={t}
+              onClick={() => setTab(t)}
+              className={`flex-1 rounded-lg py-2.5 text-sm font-semibold transition-all ${
+                tab === t
+                  ? "bg-gradient-to-r from-[#833ab4] via-[#fd1d1d] to-[#fcb045] text-white shadow"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
             >
-              {loading ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <Download className="h-4 w-4" />
-              )}
-              <span className="ml-2 hidden sm:inline">
-                {loading ? "Fetching..." : "Download"}
-              </span>
-            </Button>
-          </div>
-        </motion.div>
+              {t === "single" ? "Single Download" : "Bulk Download"}
+            </button>
+          ))}
+        </div>
 
-        {/* Results */}
-        {result && !result.success && result.error && (
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="w-full rounded-xl border border-destructive/30 bg-destructive/10 p-4 text-sm text-destructive flex items-center gap-3"
-          >
-            <AlertCircle className="h-5 w-5 shrink-0" />
-            {result.error}
-          </motion.div>
-        )}
-
-        {result?.success && result.download_links && result.download_links.length > 0 && (
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="w-full space-y-4"
-          >
-            {/* Thumbnail */}
-            {result.thumbnail && (
-              <div className="mx-auto w-48 overflow-hidden rounded-xl border border-white/5">
-                <img
-                  src={result.thumbnail}
-                  alt="Reel thumbnail"
-                  className="h-auto w-full object-cover"
-                />
-              </div>
-            )}
-
-            {/* Download links */}
-            <div className="rounded-xl border border-white/5 bg-card/80 p-4 backdrop-blur space-y-3">
-              <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
-                <CheckCircle2 className="h-4 w-4 text-green-400" />
-                {result.download_links.length} download option
-                {result.download_links.length > 1 ? "s" : ""} found
-              </div>
-
-              <div className="grid gap-2">
-                {result.download_links.map((link, i) => (
-                  <Button
-                    key={i}
-                    onClick={() =>
-                      triggerDownload(
-                        link.url,
-                        `MinusFlow.net_reel_${link.quality}.${link.format}`
-                      )
-                    }
-                    className="w-full bg-gradient-to-r from-[#833ab4] via-[#fd1d1d] to-[#fcb045] text-white hover:opacity-90"
-                  >
-                    <Download className="mr-2 h-4 w-4" />
-                    Download {link.quality} ({link.format.toUpperCase()})
-                  </Button>
-                ))}
-              </div>
-            </div>
-          </motion.div>
-        )}
+        <AnimatePresence mode="wait">
+          {tab === "single" ? (
+            <motion.div key="single" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }}>
+              <SingleTab />
+            </motion.div>
+          ) : (
+            <motion.div key="bulk" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
+              <BulkTab />
+            </motion.div>
+          )}
+        </AnimatePresence>
       </main>
 
       <Footer />
     </div>
   );
 };
+
+// ── Single Tab ──
+const SingleTab = () => {
+  const [url, setUrl] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [result, setResult] = useState<FetchResult | null>(null);
+
+  const handleSubmit = async () => {
+    const trimmed = url.trim();
+    if (!trimmed) return;
+    setLoading(true);
+    setResult(null);
+    try {
+      const data = await fetchReel(trimmed);
+      setResult(data);
+    } catch {
+      setResult({ success: false, error: "Something went wrong. Please try again." });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="flex gap-3">
+        <Input
+          value={url}
+          onChange={(e) => setUrl(e.target.value)}
+          placeholder="https://www.instagram.com/reel/..."
+          className="flex-1 border-white/10 bg-card text-foreground placeholder:text-muted-foreground"
+          onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
+        />
+        <Button
+          onClick={handleSubmit}
+          disabled={loading || !url.trim()}
+          className="bg-gradient-to-r from-[#833ab4] via-[#fd1d1d] to-[#fcb045] px-6 text-white hover:opacity-90"
+        >
+          {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+          <span className="ml-2 hidden sm:inline">{loading ? "Fetching..." : "Download"}</span>
+        </Button>
+      </div>
+
+      <ResultCard result={result} index={0} />
+    </div>
+  );
+};
+
+// ── Result Card (reusable) ──
+const ResultCard = ({ result, index }: { result: FetchResult | null; index: number }) => {
+  if (!result) return null;
+
+  if (!result.success && result.error) {
+    return (
+      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
+        className="w-full rounded-xl border border-destructive/30 bg-destructive/10 p-4 text-sm text-destructive flex items-center gap-3"
+      >
+        <AlertCircle className="h-5 w-5 shrink-0" />
+        {result.error}
+      </motion.div>
+    );
+  }
+
+  if (!result.success || !result.download_links?.length) return null;
+
+  return (
+    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="w-full space-y-3">
+      {result.thumbnail && (
+        <div className="mx-auto w-40 overflow-hidden rounded-xl border border-white/5">
+          <img src={result.thumbnail} alt="Reel thumbnail" className="h-auto w-full object-cover" />
+        </div>
+      )}
+      <div className="rounded-xl border border-white/5 bg-card/80 p-4 backdrop-blur space-y-3">
+        <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
+          <CheckCircle2 className="h-4 w-4 text-green-400" />
+          {result.download_links.length} download option{result.download_links.length > 1 ? "s" : ""} found
+        </div>
+        <div className="grid gap-2">
+          {result.download_links.map((link, i) => (
+            <Button
+              key={i}
+              onClick={() => triggerDownload(link.url, `MinusFlow.net_reel_${index + 1}_${link.quality}.${link.format}`)}
+              className="w-full bg-gradient-to-r from-[#833ab4] via-[#fd1d1d] to-[#fcb045] text-white hover:opacity-90"
+            >
+              <Download className="mr-2 h-4 w-4" />
+              Download {link.quality} ({link.format.toUpperCase()})
+            </Button>
+          ))}
+        </div>
+      </div>
+    </motion.div>
+  );
+};
+
+// ── Bulk Tab ──
+const BulkTab = () => {
+  const [text, setText] = useState("");
+  const [entries, setEntries] = useState<BulkEntry[]>([]);
+  const [processing, setProcessing] = useState(false);
+  const [progress, setProgress] = useState({ current: 0, total: 0 });
+  const abortRef = useRef(false);
+  const { toast } = useToast();
+
+  const handleBulk = async () => {
+    const urls = text.split("\n").map((l) => l.trim()).filter((l) => l.length > 0).slice(0, 20);
+    if (urls.length === 0) return;
+
+    abortRef.current = false;
+    setProcessing(true);
+    setProgress({ current: 0, total: urls.length });
+
+    const initial: BulkEntry[] = urls.map((u) => ({ url: u, status: "pending" }));
+    setEntries([...initial]);
+
+    for (let i = 0; i < urls.length; i++) {
+      if (abortRef.current) break;
+      initial[i].status = "loading";
+      setEntries([...initial]);
+      setProgress({ current: i + 1, total: urls.length });
+
+      try {
+        const data = await fetchReel(urls[i]);
+        if (!data.success) {
+          initial[i].status = "error";
+          initial[i].error = data.error || "Failed";
+        } else {
+          initial[i].status = "success";
+          initial[i].result = data;
+        }
+      } catch {
+        initial[i].status = "error";
+        initial[i].error = "Network error";
+      }
+      setEntries([...initial]);
+      if (i < urls.length - 1) await new Promise((r) => setTimeout(r, 1500));
+    }
+    setProcessing(false);
+  };
+
+  const handleDownloadAll = async () => {
+    const successful = entries.filter((e) => e.status === "success" && e.result?.download_links?.length);
+    if (successful.length === 0) {
+      toast({ title: "Nothing to download", description: "No successful results.", variant: "destructive" });
+      return;
+    }
+    let idx = 0;
+    for (const entry of successful) {
+      // Download highest quality (first link) for each
+      const link = entry.result!.download_links![0];
+      idx++;
+      triggerDownload(link.url, `MinusFlow.net_reel_${idx}.${link.format}`);
+      await new Promise((r) => setTimeout(r, 800));
+    }
+    toast({ title: "Downloads started", description: `${idx} file(s) queued.` });
+  };
+
+  const successCount = entries.filter((e) => e.status === "success").length;
+
+  return (
+    <div className="space-y-6">
+      <Textarea
+        value={text}
+        onChange={(e) => setText(e.target.value)}
+        placeholder={"Paste Instagram Reel URLs, one per line (max 20)\nhttps://www.instagram.com/reel/ABC123/\nhttps://www.instagram.com/username/reel/XYZ789/"}
+        className="min-h-[140px] border-white/10 bg-card text-foreground placeholder:text-muted-foreground"
+      />
+
+      <div className="flex gap-3">
+        <Button
+          onClick={handleBulk}
+          disabled={processing || !text.trim()}
+          className="flex-1 bg-gradient-to-r from-[#833ab4] via-[#fd1d1d] to-[#fcb045] text-white hover:opacity-90"
+        >
+          {processing ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Processing {progress.current}/{progress.total}...
+            </>
+          ) : (
+            <>
+              <Download className="mr-2 h-4 w-4" />
+              Process All
+            </>
+          )}
+        </Button>
+
+        {successCount > 0 && !processing && (
+          <Button
+            onClick={handleDownloadAll}
+            variant="outline"
+            className="border-[#833ab4]/40 text-[#833ab4] hover:bg-[#833ab4]/10"
+          >
+            <Download className="mr-2 h-4 w-4" />
+            Download All ({successCount})
+          </Button>
+        )}
+      </div>
+
+      {processing && (
+        <div className="space-y-2">
+          <Progress value={(progress.current / progress.total) * 100} className="h-2" />
+          <p className="text-center text-xs text-muted-foreground">
+            Processing {progress.current} of {progress.total}...
+          </p>
+        </div>
+      )}
+
+      {entries.length > 0 && (
+        <div className="max-h-[500px] space-y-3 overflow-y-auto pr-1">
+          {entries.map((entry, i) => (
+            <BulkCard key={i} entry={entry} index={i} />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ── Bulk Card ──
+const BulkCard = ({ entry, index }: { entry: BulkEntry; index: number }) => (
+  <div className="rounded-xl border border-white/5 bg-card/80 p-4 backdrop-blur">
+    <div className="mb-2 flex items-center gap-2">
+      {entry.status === "loading" && <Loader2 className="h-4 w-4 animate-spin text-[#fcb045]" />}
+      {entry.status === "success" && <CheckCircle2 className="h-4 w-4 text-green-400" />}
+      {entry.status === "error" && <XCircle className="h-4 w-4 text-destructive" />}
+      {entry.status === "pending" && <div className="h-4 w-4 rounded-full border-2 border-muted-foreground/30" />}
+      <span className="truncate text-sm text-muted-foreground">#{index + 1} — {entry.url}</span>
+    </div>
+
+    {entry.status === "error" && <p className="text-xs text-destructive">{entry.error}</p>}
+
+    {entry.status === "success" && entry.result && (
+      <ResultCard result={entry.result} index={index} />
+    )}
+  </div>
+);
 
 export default InstagramDownloader;
