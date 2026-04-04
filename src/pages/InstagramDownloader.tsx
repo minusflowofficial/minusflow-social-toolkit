@@ -282,7 +282,7 @@ const BulkTab = () => {
       // Download highest quality (first link) for each
       const link = entry.result!.download_links![0];
       idx++;
-      triggerDownload(link.url, `MinusFlow.net_reel_${idx}.${link.format}`);
+      triggerDownload(link.url, buildFilename(entry.result!, idx - 1, link.quality, link.format));
       await new Promise((r) => setTimeout(r, 800));
     }
     toast({ title: "Downloads started", description: `${idx} file(s) queued.` });
