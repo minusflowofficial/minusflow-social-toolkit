@@ -168,8 +168,7 @@ Deno.serve(async (req) => {
     // Validate Instagram reel URL
     const normalized = url.trim().toLowerCase();
     if (
-      !normalized.includes("instagram.com/reel") &&
-      !normalized.includes("instagram.com/p/") &&
+      !normalized.includes("instagram.com") &&
       !normalized.includes("instagr.am")
     ) {
       return jsonRes({
