@@ -13,6 +13,7 @@ import Disclaimer from "./pages/Disclaimer.tsx";
 import TikTokDownloader from "./pages/TikTokDownloader.tsx";
 import InstagramDownloader from "./pages/InstagramDownloader.tsx";
 import NotFound from "./pages/NotFound.tsx";
+import TranscriptGenerator from "./pages/TranscriptGenerator.tsx";
 
 const queryClient = new QueryClient();
 
@@ -32,6 +33,7 @@ const App = () => (
           <Route path="/disclaimer" element={<Disclaimer />} />
           <Route path="/tiktok" element={<TikTokDownloader />} />
           <Route path="/instagram" element={<InstagramDownloader />} />
+          <Route path="/transcript" element={<TranscriptGenerator />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

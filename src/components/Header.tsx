@@ -8,6 +8,7 @@ const downloaderLinks = [
   { to: "/", label: "YouTube Downloader" },
   { to: "/tiktok", label: "TikTok Downloader" },
   { to: "/instagram", label: "Instagram Downloader" },
+  { to: "/transcript", label: "YouTube Transcript" },
 ];
 
 const pageLinks = [
