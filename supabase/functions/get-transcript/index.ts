@@ -59,20 +59,34 @@ Deno.serve(async (req: Request) => {
     });
     const pageHtml = await pageRes.text();
 
-    // Step 2: Extract ytInitialPlayerResponse
-    const match = pageHtml.match(
-      /ytInitialPlayerResponse\s*=\s*(\{.+?\})\s*;\s*(?:var\s|const\s|let\s|<\/script>)/s,
-    );
-    if (!match) {
+    // Step 2: Extract ytInitialPlayerResponse using brace matching
+    const marker = "ytInitialPlayerResponse";
+    const idx = pageHtml.indexOf(marker);
+    if (idx === -1) {
       return new Response(
         JSON.stringify({ error: "Could not parse video data" }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
+    const jsonStart = pageHtml.indexOf("{", idx);
+    if (jsonStart === -1) {
+      return new Response(
+        JSON.stringify({ error: "Could not parse video data" }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+    let depth = 0;
+    let jsonEnd = jsonStart;
+    for (let i = jsonStart; i < pageHtml.length; i++) {
+      if (pageHtml[i] === "{") depth++;
+      else if (pageHtml[i] === "}") depth--;
+      if (depth === 0) { jsonEnd = i + 1; break; }
+    }
+    const rawJson = pageHtml.substring(jsonStart, jsonEnd);
 
     let playerResponse: any;
     try {
-      playerResponse = JSON.parse(match[1]);
+      playerResponse = JSON.parse(rawJson);
     } catch {
       return new Response(
         JSON.stringify({ error: "Failed to parse video metadata" }),
