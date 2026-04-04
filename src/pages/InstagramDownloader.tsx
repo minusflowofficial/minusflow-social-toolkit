@@ -183,6 +183,8 @@ const SingleTab = () => {
 
 // ── Result Card (reusable) ──
 const ResultCard = ({ result, index }: { result: FetchResult | null; index: number }) => {
+  const [selectedIdx, setSelectedIdx] = useState(0);
+
   if (!result) return null;
 
   if (!result.success && result.error) {
@@ -198,32 +200,57 @@ const ResultCard = ({ result, index }: { result: FetchResult | null; index: numb
 
   if (!result.success || !result.download_links?.length) return null;
 
+  const selectedLink = result.download_links[selectedIdx];
+
   return (
-    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="w-full space-y-3">
-      {result.thumbnail && (
-        <div className="mx-auto w-40 overflow-hidden rounded-xl border border-white/5">
-          <img src={result.thumbnail} alt="Reel thumbnail" className="h-auto w-full object-cover" />
+    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
+      className="w-full rounded-xl border border-border bg-card p-4 space-y-4"
+    >
+      {/* Thumbnail + Title row */}
+      <div className="flex gap-4 items-start">
+        {result.thumbnail && (
+          <img
+            src={result.thumbnail}
+            alt="Reel thumbnail"
+            className="h-24 w-24 flex-shrink-0 rounded-lg object-cover"
+          />
+        )}
+        <div className="flex-1 min-w-0">
+          {result.title && (
+            <p className="font-semibold text-foreground line-clamp-2 text-sm">{result.title}</p>
+          )}
+          {result.hashtags?.length ? (
+            <p className="text-xs text-muted-foreground mt-1 line-clamp-1">
+              {result.hashtags.slice(0, 5).map(t => `#${t}`).join(" ")}
+            </p>
+          ) : null}
         </div>
-      )}
-      <div className="space-y-2">
-        {result.download_links.map((link, i) => (
-          <motion.div
-            key={i}
-            initial={{ opacity: 0, y: 15 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 + i * 0.06, duration: 0.4, ease: [0.25, 0.46, 0.45, 0.94] }}
-          >
-            <FormatCard
-              format={link.quality}
-              resolution={link.quality}
-              fileSize="N/A"
-              extension={link.format}
-              downloadUrl={link.url}
-              fileName={buildFilename(result, index, link.quality, link.format)}
-              isRecommended={i === 0}
-            />
-          </motion.div>
-        ))}
+      </div>
+
+      {/* Quality dropdown + Download button */}
+      <div className="flex gap-2 items-center">
+        <Select
+          value={String(selectedIdx)}
+          onValueChange={(v) => setSelectedIdx(Number(v))}
+        >
+          <SelectTrigger className="flex-1 bg-background border-border">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {result.download_links.map((link, i) => (
+              <SelectItem key={i} value={String(i)}>
+                {link.quality} — {link.format.toUpperCase()}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Button
+          onClick={() => triggerDownload(selectedLink.url, buildFilename(result, index, selectedLink.quality, selectedLink.format))}
+          className="bg-gradient-to-r from-[#833ab4] via-[#fd1d1d] to-[#fcb045] text-white hover:opacity-90 px-6"
+        >
+          <Download className="h-4 w-4 mr-1.5" />
+          Download
+        </Button>
       </div>
     </motion.div>
   );
