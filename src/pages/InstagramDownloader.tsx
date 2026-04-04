@@ -213,7 +213,7 @@ const ResultCard = ({ result, index }: { result: FetchResult | null; index: numb
           {result.download_links.map((link, i) => (
             <Button
               key={i}
-              onClick={() => triggerDownload(link.url, `MinusFlow.net_reel_${index + 1}_${link.quality}.${link.format}`)}
+              onClick={() => triggerDownload(link.url, buildFilename(result, index, link.quality, link.format))}
               className="w-full bg-gradient-to-r from-[#833ab4] via-[#fd1d1d] to-[#fcb045] text-white hover:opacity-90"
             >
               <Download className="mr-2 h-4 w-4" />
