@@ -24,7 +24,28 @@ interface FetchResult {
   success: boolean;
   download_links?: DownloadLink[];
   thumbnail?: string;
+  title?: string;
+  hashtags?: string[];
   error?: string | null;
+}
+
+function sanitizeFilename(name: string) {
+  return name.replace(/[^a-zA-Z0-9_\-. #]/g, "").replace(/\s+/g, "_").slice(0, 120) || "reel";
+}
+
+function buildFilename(result: FetchResult, index: number, quality: string, format: string) {
+  let name = "MinusFlow.net";
+  const titlePart = result.title ? `_${sanitizeFilename(result.title)}` : `_reel_${index + 1}`;
+  name += titlePart;
+  if (result.hashtags?.length) {
+    const tags = result.hashtags.slice(0, 5).join("_");
+    // Only add if not already in title
+    if (!titlePart.includes(tags.slice(0, 10))) {
+      name += `_${sanitizeFilename(tags)}`;
+    }
+  }
+  name += `_${quality}.${format}`;
+  return name;
 }
 
 interface BulkEntry {
@@ -192,7 +213,7 @@ const ResultCard = ({ result, index }: { result: FetchResult | null; index: numb
           {result.download_links.map((link, i) => (
             <Button
               key={i}
-              onClick={() => triggerDownload(link.url, `MinusFlow.net_reel_${index + 1}_${link.quality}.${link.format}`)}
+              onClick={() => triggerDownload(link.url, buildFilename(result, index, link.quality, link.format))}
               className="w-full bg-gradient-to-r from-[#833ab4] via-[#fd1d1d] to-[#fcb045] text-white hover:opacity-90"
             >
               <Download className="mr-2 h-4 w-4" />
@@ -261,7 +282,7 @@ const BulkTab = () => {
       // Download highest quality (first link) for each
       const link = entry.result!.download_links![0];
       idx++;
-      triggerDownload(link.url, `MinusFlow.net_reel_${idx}.${link.format}`);
+      triggerDownload(link.url, buildFilename(entry.result!, idx - 1, link.quality, link.format));
       await new Promise((r) => setTimeout(r, 800));
     }
     toast({ title: "Downloads started", description: `${idx} file(s) queued.` });
