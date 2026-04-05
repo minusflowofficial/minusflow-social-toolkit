@@ -5,7 +5,6 @@ const corsHeaders = {
 };
 
 const INNERTUBE_API_KEY = "AIzaSyAO_FJ2SlqU8Q4STEHLGCilw_Y9_11qcW8";
-const INNERTUBE_CLIENT_VERSION = "2.20240530.02.00";
 
 type CaptionTrack = {
   baseUrl: string;
@@ -54,48 +53,114 @@ function resolveTrackName(track: CaptionTrack): string {
 }
 
 async function getPlayerResponse(videoId: string) {
-  // Use YouTube's innertube API - works from server environments
-  const payload = {
-    context: {
-      client: {
-        hl: "en",
-        gl: "US",
-        clientName: "WEB",
-        clientVersion: INNERTUBE_CLIENT_VERSION,
-      },
-    },
-    videoId,
-  };
-
-  const res = await fetch(
-    `https://www.youtube.com/youtubei/v1/player?key=${INNERTUBE_API_KEY}&prettyPrint=false`,
+  // Try multiple client types - ANDROID client reliably returns captions from servers
+  const clients = [
     {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "User-Agent":
-          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/125.0.0.0 Safari/537.36",
-      },
-      body: JSON.stringify(payload),
-    }
-  );
+      clientName: "ANDROID",
+      clientVersion: "19.09.37",
+      androidSdkVersion: 30,
+      userAgent: "com.google.android.youtube/19.09.37 (Linux; U; Android 11) gzip",
+    },
+    {
+      clientName: "IOS",
+      clientVersion: "19.09.3",
+      deviceModel: "iPhone14,3",
+      userAgent: "com.google.ios.youtube/19.09.3 (iPhone14,3; U; CPU iOS 15_6 like Mac OS X)",
+    },
+  ];
 
-  if (!res.ok) {
-    console.log("Innertube player API failed:", res.status);
-    return null;
+  for (const client of clients) {
+    try {
+      const payload: any = {
+        context: {
+          client: {
+            hl: "en",
+            gl: "US",
+            clientName: client.clientName,
+            clientVersion: client.clientVersion,
+            ...(client.androidSdkVersion && { androidSdkVersion: client.androidSdkVersion }),
+            ...(client.deviceModel && { deviceModel: client.deviceModel }),
+          },
+        },
+        videoId,
+      };
+
+      const res = await fetch(
+        `https://www.youtube.com/youtubei/v1/player?key=${INNERTUBE_API_KEY}&prettyPrint=false`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "User-Agent": client.userAgent,
+          },
+          body: JSON.stringify(payload),
+        }
+      );
+
+      if (!res.ok) {
+        console.log(`${client.clientName} client failed:`, res.status);
+        continue;
+      }
+
+      const data = await res.json();
+      const tracks = data?.captions?.playerCaptionsTracklistRenderer?.captionTracks;
+      console.log(`${client.clientName} client: ${tracks?.length || 0} caption tracks`);
+
+      if (Array.isArray(tracks) && tracks.length > 0) {
+        return data;
+      }
+    } catch (e) {
+      console.log(`${client.clientName} client error:`, e);
+    }
   }
 
-  return await res.json();
+  // Final fallback: WEB_EMBEDDED_PLAYER client
+  try {
+    const payload = {
+      context: {
+        client: {
+          hl: "en",
+          gl: "US",
+          clientName: "WEB_EMBEDDED_PLAYER",
+          clientVersion: "1.20240530.00.00",
+        },
+      },
+      videoId,
+    };
+
+    const res = await fetch(
+      `https://www.youtube.com/youtubei/v1/player?key=${INNERTUBE_API_KEY}&prettyPrint=false`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "User-Agent":
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/125.0.0.0 Safari/537.36",
+        },
+        body: JSON.stringify(payload),
+      }
+    );
+
+    if (res.ok) {
+      const data = await res.json();
+      const tracks = data?.captions?.playerCaptionsTracklistRenderer?.captionTracks;
+      console.log(`WEB_EMBEDDED_PLAYER: ${tracks?.length || 0} caption tracks`);
+      if (Array.isArray(tracks) && tracks.length > 0) {
+        return data;
+      }
+      // Even if no tracks, return data for video details
+      return data;
+    }
+  } catch (e) {
+    console.log("WEB_EMBEDDED_PLAYER error:", e);
+  }
+
+  return null;
 }
 
 async function fetchTranscriptJson3(track: CaptionTrack) {
   const url = `${track.baseUrl}&fmt=json3`;
-  const res = await fetch(url, {
-    headers: {
-      "User-Agent":
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/125.0.0.0 Safari/537.36",
-    },
-  });
+  const res = await fetch(url);
   if (!res.ok) throw new Error("json3 fetch failed: " + res.status);
   const data = await res.json();
 
@@ -110,12 +175,7 @@ async function fetchTranscriptJson3(track: CaptionTrack) {
 }
 
 async function fetchTranscriptXml(track: CaptionTrack) {
-  const res = await fetch(track.baseUrl, {
-    headers: {
-      "User-Agent":
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/125.0.0.0 Safari/537.36",
-    },
-  });
+  const res = await fetch(track.baseUrl);
   if (!res.ok) throw new Error("XML fetch failed: " + res.status);
   const xml = await res.text();
 
@@ -196,8 +256,6 @@ Deno.serve(async (req: Request) => {
     const captionTracks =
       playerResponse?.captions?.playerCaptionsTracklistRenderer?.captionTracks;
 
-    console.log("Caption tracks found:", captionTracks?.length || 0);
-
     if (!Array.isArray(captionTracks) || captionTracks.length === 0) {
       return new Response(
         JSON.stringify({
@@ -213,11 +271,10 @@ Deno.serve(async (req: Request) => {
       captionTracks.find((t: CaptionTrack) => t.languageCode?.startsWith("en")) ||
       captionTracks[0];
 
-    console.log("Using track:", track.languageCode, track.baseUrl?.substring(0, 80));
+    console.log("Using track:", track.languageCode);
 
     const transcript = await fetchTranscriptFromTrack(track);
-
-    console.log("Transcript lines fetched:", transcript.length);
+    console.log("Transcript lines:", transcript.length);
 
     return new Response(
       JSON.stringify({
