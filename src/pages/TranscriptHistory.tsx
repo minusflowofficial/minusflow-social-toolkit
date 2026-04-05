@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Clock, Trash2, Eye, FileText, X } from "lucide-react";
+import { Clock, Trash2, Eye, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
@@ -13,9 +13,7 @@ const TranscriptHistory = () => {
   const [items, setItems] = useState<HistoryItem[]>([]);
   const navigate = useNavigate();
 
-  useEffect(() => {
-    setItems(getHistory());
-  }, []);
+  useEffect(() => { setItems(getHistory()); }, []);
 
   const handleDelete = (videoId: string) => {
     removeFromHistory(videoId);
@@ -23,16 +21,8 @@ const TranscriptHistory = () => {
     toast.success("Removed from history");
   };
 
-  const handleClearAll = () => {
-    clearHistory();
-    setItems([]);
-    toast.success("History cleared");
-  };
-
-  const formatDate = (iso: string) => {
-    const d = new Date(iso);
-    return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
-  };
+  const formatDate = (iso: string) =>
+    new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 
   return (
     <div className="relative min-h-screen bg-background text-foreground overflow-hidden">
@@ -53,14 +43,18 @@ const TranscriptHistory = () => {
               Your <span className="text-primary">Recent</span> Transcripts
             </h1>
             <p className="mx-auto max-w-xl text-muted-foreground">
-              Quick access to your previously extracted transcripts, stored locally on your device.
+              Quick access to previously extracted transcripts, stored locally.
             </p>
           </motion.div>
 
           {items.length > 0 && (
             <div className="mb-6 flex justify-end">
-              <Button size="sm" variant="outline" onClick={handleClearAll} className="gap-2 text-destructive hover:text-destructive">
-                <Trash2 className="h-3.5 w-3.5" /> Clear All History
+              <Button
+                size="sm" variant="outline"
+                onClick={() => { clearHistory(); setItems([]); toast.success("History cleared"); }}
+                className="gap-2 text-destructive hover:text-destructive"
+              >
+                <Trash2 className="h-3.5 w-3.5" /> Clear All
               </Button>
             </div>
           )}
@@ -98,7 +92,6 @@ const TranscriptHistory = () => {
                     />
                     <div className="min-w-0 flex-1">
                       <h3 className="text-sm font-medium leading-tight line-clamp-2">{item.title}</h3>
-                      <p className="mt-1 text-xs text-muted-foreground">{item.author}</p>
                       <div className="mt-1 flex items-center gap-2 text-xs text-muted-foreground">
                         <span>{item.wordCount.toLocaleString()} words</span>
                         <span>•</span>
@@ -109,7 +102,7 @@ const TranscriptHistory = () => {
                   <div className="mt-2 flex gap-2">
                     <Button
                       size="sm" variant="outline" className="flex-1 gap-1.5 text-xs"
-                      onClick={() => navigate(`/transcript?v=${item.videoId}`)}
+                      onClick={() => navigate(`/transcript/${item.videoId}`)}
                     >
                       <Eye className="h-3 w-3" /> View
                     </Button>

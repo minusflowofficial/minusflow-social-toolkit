@@ -1,36 +1,49 @@
 export interface TranscriptLine {
-  text: string;
   start: number;
   duration: number;
+  text: string;
 }
 
 export interface TranscriptResult {
-  video_id: string;
+  success: boolean;
+  videoId: string;
   title: string;
   author: string;
-  thumbnail: string;
   duration: number;
   language: string;
-  available_languages: { code: string; name: string }[];
+  thumbnail: string;
+  availableTracks: { languageCode: string; name: string }[];
   transcript: TranscriptLine[];
 }
 
 export interface HistoryItem {
   videoId: string;
   title: string;
-  author: string;
   thumbnail: string;
-  wordCount: number;
   fetchedAt: string;
-  transcriptPreview: string;
+  wordCount: number;
 }
 
-const HISTORY_KEY = "yt_transcript_history";
-const MAX_HISTORY = 50;
+const HISTORY_KEY = "yt_history";
+const MAX_HISTORY = 20;
+
+export function extractVideoId(input: string): string | null {
+  const patterns = [
+    /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/shorts\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/,
+    /^([a-zA-Z0-9_-]{11})$/,
+  ];
+  for (const pattern of patterns) {
+    const match = input.match(pattern);
+    if (match) return match[1];
+  }
+  return null;
+}
 
 export const formatTime = (seconds: number): string => {
-  const m = Math.floor(seconds / 60);
+  const h = Math.floor(seconds / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
   const s = Math.floor(seconds % 60);
+  if (h > 0) return `${h}:${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
   return `${m}:${s.toString().padStart(2, "0")}`;
 };
 
@@ -53,9 +66,6 @@ export const exportSrt = (lines: TranscriptLine[]): string =>
     })
     .join("\n");
 
-export const exportJson = (lines: TranscriptLine[]): string =>
-  JSON.stringify(lines, null, 2);
-
 export const downloadFile = (content: string, filename: string, mime: string) => {
   const blob = new Blob([content], { type: mime });
   const url = URL.createObjectURL(blob);
@@ -66,50 +76,6 @@ export const downloadFile = (content: string, filename: string, mime: string) =>
   URL.revokeObjectURL(url);
 };
 
-export const getHistory = (): HistoryItem[] => {
-  try {
-    return JSON.parse(localStorage.getItem(HISTORY_KEY) || "[]");
-  } catch {
-    return [];
-  }
-};
-
-export const saveToHistory = (result: TranscriptResult) => {
-  const history = getHistory();
-  const existing = history.findIndex((h) => h.videoId === result.video_id);
-  if (existing !== -1) history.splice(existing, 1);
-
-  const wordCount = result.transcript.reduce(
-    (acc, l) => acc + l.text.split(/\s+/).length,
-    0
-  );
-
-  history.unshift({
-    videoId: result.video_id,
-    title: result.title,
-    author: result.author,
-    thumbnail: result.thumbnail,
-    wordCount,
-    fetchedAt: new Date().toISOString(),
-    transcriptPreview: result.transcript
-      .slice(0, 3)
-      .map((l) => l.text)
-      .join(" ")
-      .slice(0, 120),
-  });
-
-  localStorage.setItem(HISTORY_KEY, JSON.stringify(history.slice(0, MAX_HISTORY)));
-};
-
-export const removeFromHistory = (videoId: string) => {
-  const history = getHistory().filter((h) => h.videoId !== videoId);
-  localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
-};
-
-export const clearHistory = () => {
-  localStorage.removeItem(HISTORY_KEY);
-};
-
 export const getWordCount = (lines: TranscriptLine[]): number =>
   lines.reduce((acc, l) => acc + l.text.split(/\s+/).filter(Boolean).length, 0);
 
@@ -117,7 +83,33 @@ export const formatDuration = (seconds: number): string => {
   const h = Math.floor(seconds / 3600);
   const m = Math.floor((seconds % 3600) / 60);
   const s = seconds % 60;
-  if (h > 0) return `${h}h ${m}m ${s}s`;
+  if (h > 0) return `${h}h ${m}m`;
   if (m > 0) return `${m}m ${s}s`;
   return `${s}s`;
 };
+
+export const getHistory = (): HistoryItem[] => {
+  try { return JSON.parse(localStorage.getItem(HISTORY_KEY) || "[]"); }
+  catch { return []; }
+};
+
+export const saveToHistory = (result: TranscriptResult) => {
+  const history = getHistory().filter((h) => h.videoId !== result.videoId);
+  history.unshift({
+    videoId: result.videoId,
+    title: result.title,
+    thumbnail: result.thumbnail,
+    fetchedAt: new Date().toISOString(),
+    wordCount: getWordCount(result.transcript),
+  });
+  localStorage.setItem(HISTORY_KEY, JSON.stringify(history.slice(0, MAX_HISTORY)));
+};
+
+export const removeFromHistory = (videoId: string) => {
+  localStorage.setItem(
+    HISTORY_KEY,
+    JSON.stringify(getHistory().filter((h) => h.videoId !== videoId))
+  );
+};
+
+export const clearHistory = () => localStorage.removeItem(HISTORY_KEY);
