@@ -30,6 +30,12 @@ const TranscriptGenerator = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [copiedLine, setCopiedLine] = useState<number | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const [searchParams] = useSearchParams();
+
+  useEffect(() => {
+    const v = searchParams.get("v");
+    if (v) { setUrl(v); fetchTranscript(v); }
+  }, []);
 
   const fetchTranscript = async (videoUrl?: string) => {
     const trimmed = (videoUrl || url).trim();
