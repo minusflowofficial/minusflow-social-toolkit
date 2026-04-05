@@ -4,20 +4,8 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
 };
 
-const YOUTUBE_HEADERS = {
-  "User-Agent":
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36",
-  "Accept-Language": "en-US,en;q=0.9",
-  Accept:
-    "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
-  "Sec-Fetch-Mode": "navigate",
-  "Sec-Fetch-Site": "none",
-  "Sec-Fetch-Dest": "document",
-  "Sec-Ch-Ua": '"Chromium";v="125", "Not.A/Brand";v="24"',
-  "Sec-Ch-Ua-Mobile": "?0",
-  "Sec-Ch-Ua-Platform": '"Windows"',
-  Cookie: "CONSENT=PENDING+987; SOCS=CAESEwgDEgk2MTkxMzgxMjAaAmVuIAEaBgiA_LyaBg",
-};
+const INNERTUBE_API_KEY = "AIzaSyAO_FJ2SlqU8Q4STEHLGCilw_Y9_11qcW8";
+const INNERTUBE_CLIENT_VERSION = "2.20240530.02.00";
 
 type CaptionTrack = {
   baseUrl: string;
@@ -56,55 +44,6 @@ function extractVideoId(input: string): string | null {
   return null;
 }
 
-function extractJsonObjectAfterMarker(html: string, marker: string): string | null {
-  const markerIndex = html.indexOf(marker);
-  if (markerIndex === -1) return null;
-
-  const jsonStart = html.indexOf("{", markerIndex);
-  if (jsonStart === -1) return null;
-
-  let depth = 0;
-  let inString = false;
-  let escaped = false;
-
-  for (let i = jsonStart; i < html.length; i++) {
-    const char = html[i];
-    if (inString) {
-      if (escaped) { escaped = false; }
-      else if (char === "\\") { escaped = true; }
-      else if (char === '"') { inString = false; }
-      continue;
-    }
-    if (char === '"') { inString = true; continue; }
-    if (char === "{") depth++;
-    if (char === "}") depth--;
-    if (depth === 0) return html.slice(jsonStart, i + 1);
-  }
-  return null;
-}
-
-function parsePlayerResponse(pageHtml: string) {
-  const rawJson = extractJsonObjectAfterMarker(pageHtml, "ytInitialPlayerResponse");
-  if (!rawJson) return null;
-  try { return JSON.parse(rawJson); } catch { return null; }
-}
-
-function extractCaptionTracksFromHtml(pageHtml: string): CaptionTrack[] {
-  const patterns = [
-    /"captionTracks":(\[[\s\S]*?\]),"audioTracks"/,
-    /"captionTracks":(\[[\s\S]*?\])/,
-  ];
-  for (const pattern of patterns) {
-    const match = pageHtml.match(pattern);
-    if (!match) continue;
-    try {
-      const parsed = JSON.parse(match[1]);
-      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
-    } catch { continue; }
-  }
-  return [];
-}
-
 function resolveTrackName(track: CaptionTrack): string {
   if (track.name?.simpleText) return track.name.simpleText;
   if (Array.isArray(track.name?.runs)) {
@@ -114,10 +53,50 @@ function resolveTrackName(track: CaptionTrack): string {
   return track.languageCode || "Unknown";
 }
 
+async function getPlayerResponse(videoId: string) {
+  // Use YouTube's innertube API - works from server environments
+  const payload = {
+    context: {
+      client: {
+        hl: "en",
+        gl: "US",
+        clientName: "WEB",
+        clientVersion: INNERTUBE_CLIENT_VERSION,
+      },
+    },
+    videoId,
+  };
+
+  const res = await fetch(
+    `https://www.youtube.com/youtubei/v1/player?key=${INNERTUBE_API_KEY}&prettyPrint=false`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "User-Agent":
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/125.0.0.0 Safari/537.36",
+      },
+      body: JSON.stringify(payload),
+    }
+  );
+
+  if (!res.ok) {
+    console.log("Innertube player API failed:", res.status);
+    return null;
+  }
+
+  return await res.json();
+}
+
 async function fetchTranscriptJson3(track: CaptionTrack) {
-  const url = `${track.baseUrl}&fmt=json3&xorb=2&xobt=3&xovt=3`;
-  const res = await fetch(url, { headers: YOUTUBE_HEADERS });
-  if (!res.ok) throw new Error("json3 fetch failed");
+  const url = `${track.baseUrl}&fmt=json3`;
+  const res = await fetch(url, {
+    headers: {
+      "User-Agent":
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/125.0.0.0 Safari/537.36",
+    },
+  });
+  if (!res.ok) throw new Error("json3 fetch failed: " + res.status);
   const data = await res.json();
 
   return (data.events || [])
@@ -131,8 +110,13 @@ async function fetchTranscriptJson3(track: CaptionTrack) {
 }
 
 async function fetchTranscriptXml(track: CaptionTrack) {
-  const res = await fetch(track.baseUrl, { headers: YOUTUBE_HEADERS });
-  if (!res.ok) throw new Error("XML fetch failed");
+  const res = await fetch(track.baseUrl, {
+    headers: {
+      "User-Agent":
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/125.0.0.0 Safari/537.36",
+    },
+  });
+  if (!res.ok) throw new Error("XML fetch failed: " + res.status);
   const xml = await res.text();
 
   const lines: { text: string; start: number; duration: number }[] = [];
@@ -148,11 +132,7 @@ async function fetchTranscriptXml(track: CaptionTrack) {
       .replace(/<[^>]+>/g, "")
       .trim();
     if (text) {
-      lines.push({
-        text,
-        start: parseFloat(m[1]),
-        duration: parseFloat(m[2]),
-      });
+      lines.push({ text, start: parseFloat(m[1]), duration: parseFloat(m[2]) });
     }
   }
   return lines;
@@ -161,7 +141,8 @@ async function fetchTranscriptXml(track: CaptionTrack) {
 async function fetchTranscriptFromTrack(track: CaptionTrack) {
   try {
     return await fetchTranscriptJson3(track);
-  } catch {
+  } catch (e) {
+    console.log("json3 failed, trying XML:", e);
     return await fetchTranscriptXml(track);
   }
 }
@@ -196,14 +177,11 @@ Deno.serve(async (req: Request) => {
       });
     }
 
-    const pageRes = await fetch(`https://www.youtube.com/watch?v=${videoId}&hl=en`, {
-      headers: YOUTUBE_HEADERS,
-    });
-    const pageHtml = await pageRes.text();
+    console.log("Fetching transcript for video:", videoId);
 
-    const playerResponse = parsePlayerResponse(pageHtml);
+    const playerResponse = await getPlayerResponse(videoId);
     if (!playerResponse) {
-      return new Response(JSON.stringify({ error: "Could not parse video data" }), {
+      return new Response(JSON.stringify({ error: "Could not fetch video data from YouTube" }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -215,14 +193,12 @@ Deno.serve(async (req: Request) => {
     const lengthSeconds = parseInt(videoDetails?.lengthSeconds || "0", 10);
     const thumbnail = `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`;
 
-    const captionTracksFromPlayer =
-      playerResponse?.captions?.playerCaptionsTracklistRenderer?.captionTracks;
     const captionTracks =
-      Array.isArray(captionTracksFromPlayer) && captionTracksFromPlayer.length > 0
-        ? captionTracksFromPlayer
-        : extractCaptionTracksFromHtml(pageHtml);
+      playerResponse?.captions?.playerCaptionsTracklistRenderer?.captionTracks;
 
-    if (!captionTracks || captionTracks.length === 0) {
+    console.log("Caption tracks found:", captionTracks?.length || 0);
+
+    if (!Array.isArray(captionTracks) || captionTracks.length === 0) {
       return new Response(
         JSON.stringify({
           error: "No transcript available for this video. The video may not have captions.",
@@ -237,7 +213,11 @@ Deno.serve(async (req: Request) => {
       captionTracks.find((t: CaptionTrack) => t.languageCode?.startsWith("en")) ||
       captionTracks[0];
 
+    console.log("Using track:", track.languageCode, track.baseUrl?.substring(0, 80));
+
     const transcript = await fetchTranscriptFromTrack(track);
+
+    console.log("Transcript lines fetched:", transcript.length);
 
     return new Response(
       JSON.stringify({
@@ -255,7 +235,8 @@ Deno.serve(async (req: Request) => {
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
-  } catch {
+  } catch (err) {
+    console.error("Unhandled error:", err);
     return new Response(
       JSON.stringify({ error: "Something went wrong. Please try again." }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
