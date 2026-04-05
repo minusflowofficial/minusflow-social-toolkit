@@ -14,6 +14,7 @@ import TikTokDownloader from "./pages/TikTokDownloader.tsx";
 import InstagramDownloader from "./pages/InstagramDownloader.tsx";
 import NotFound from "./pages/NotFound.tsx";
 import TranscriptGenerator from "./pages/TranscriptGenerator.tsx";
+import ThumbnailDownloader from "./pages/ThumbnailDownloader.tsx";
 
 const queryClient = new QueryClient();
 
@@ -34,6 +35,7 @@ const App = () => (
           <Route path="/tiktok" element={<TikTokDownloader />} />
           <Route path="/instagram" element={<InstagramDownloader />} />
           <Route path="/transcript" element={<TranscriptGenerator />} />
+          <Route path="/thumbnail" element={<ThumbnailDownloader />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
