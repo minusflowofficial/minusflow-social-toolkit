@@ -15,6 +15,8 @@ import InstagramDownloader from "./pages/InstagramDownloader.tsx";
 import NotFound from "./pages/NotFound.tsx";
 import TranscriptGenerator from "./pages/TranscriptGenerator.tsx";
 import ThumbnailDownloader from "./pages/ThumbnailDownloader.tsx";
+import BulkTranscript from "./pages/BulkTranscript.tsx";
+import TranscriptHistory from "./pages/TranscriptHistory.tsx";
 
 const queryClient = new QueryClient();
 
@@ -36,6 +38,8 @@ const App = () => (
           <Route path="/instagram" element={<InstagramDownloader />} />
           <Route path="/transcript" element={<TranscriptGenerator />} />
           <Route path="/thumbnail" element={<ThumbnailDownloader />} />
+          <Route path="/bulk-transcript" element={<BulkTranscript />} />
+          <Route path="/transcript-history" element={<TranscriptHistory />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
