@@ -23,6 +23,8 @@ import AdminDashboard from "./pages/admin/AdminDashboard.tsx";
 import AdminTools from "./pages/admin/AdminTools.tsx";
 import AdminSettings from "./pages/admin/AdminSettings.tsx";
 import AdminUsers from "./pages/admin/AdminUsers.tsx";
+import AdminAnalytics from "./pages/admin/AdminAnalytics.tsx";
+import AdminLogs from "./pages/admin/AdminLogs.tsx";
 
 const queryClient = new QueryClient();
 
@@ -51,6 +53,8 @@ const App = () => (
           <Route path="/admin" element={<AdminLayout />}>
             <Route index element={<AdminDashboard />} />
             <Route path="tools" element={<AdminTools />} />
+            <Route path="analytics" element={<AdminAnalytics />} />
+            <Route path="logs" element={<AdminLogs />} />
             <Route path="users" element={<AdminUsers />} />
             <Route path="settings" element={<AdminSettings />} />
           </Route>
