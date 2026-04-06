@@ -18,6 +18,8 @@ const AdminSidebar = () => {
   const location = useLocation();
   const [collapsed, setCollapsed] = useState(false);
   const { signOut, user, role } = useAuth();
+  const { data: settings } = useSiteSettings();
+  const siteName = settings?.branding?.site_name || "MinusFlow ToolKit";
 
   const isActive = (path: string, exact?: boolean) =>
     exact ? location.pathname === path : location.pathname.startsWith(path);
