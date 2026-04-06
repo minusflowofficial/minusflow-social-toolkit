@@ -46,6 +46,16 @@ const AdminSettings = () => {
       setSiteName(br.site_name ?? "YTFetch");
 
       setSiteEnabled(settings.site_status?.enabled ?? true);
+
+      const dl = settings.download_limits || {};
+      setYtSingleLimit(String(dl.yt_single ?? 50));
+      setYtBulkLimit(String(dl.yt_bulk ?? 10));
+      setYtPlaylistLimit(String(dl.yt_playlist ?? 20));
+      setTiktokSingleLimit(String(dl.tiktok_single ?? 50));
+      setTiktokBulkLimit(String(dl.tiktok_bulk ?? 20));
+      setIgSingleLimit(String(dl.ig_single ?? 50));
+      setIgBulkLimit(String(dl.ig_bulk ?? 20));
+      setDailyLimitPerIp(String(dl.daily_per_ip ?? 100));
     }
   }, [settings]);
 
