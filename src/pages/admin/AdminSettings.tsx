@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Save, AlertTriangle, Globe, Palette, Flag, Plus, Trash2, X, Gauge } from "lucide-react";
+import { Save, AlertTriangle, Globe, Palette, Flag, Plus, Trash2, X, Gauge, Image, Type } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useSiteSettings, useUpdateSetting } from "@/hooks/useSiteSettings";
@@ -21,6 +21,8 @@ const AdminSettings = () => {
 
   // Branding
   const [siteName, setSiteName] = useState("MinusFlow ToolKit");
+  const [logoUrl, setLogoUrl] = useState("");
+  const [logoMode, setLogoMode] = useState<"image" | "text">("image");
 
   // Site status
   const [siteEnabled, setSiteEnabled] = useState(true);
@@ -43,7 +45,9 @@ const AdminSettings = () => {
       setAdminBypass(mm.admin_bypass ?? true);
 
       const br = settings.branding || {};
-      setSiteName(br.site_name ?? "YTFetch");
+      setSiteName(br.site_name ?? "MinusFlow ToolKit");
+      setLogoUrl(br.logo_url ?? "");
+      setLogoMode(br.logo_mode ?? "image");
 
       setSiteEnabled(settings.site_status?.enabled ?? true);
 
@@ -75,7 +79,7 @@ const AdminSettings = () => {
     try {
       await updateSetting.mutateAsync({
         key: "branding",
-        value: { site_name: siteName, logo_url: "", theme: "dark" },
+        value: { site_name: siteName, logo_url: logoUrl, logo_mode: logoMode, theme: "dark" },
       });
       toast.success("Branding saved");
     } catch (err: any) {
@@ -195,6 +199,64 @@ const AdminSettings = () => {
                 className="bg-muted/50"
               />
             </div>
+
+            {/* Logo Mode */}
+            <div>
+              <label className="mb-2 block text-xs text-muted-foreground">Logo Display Mode</label>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => canEdit && setLogoMode("image")}
+                  className={`flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium transition-colors ${
+                    logoMode === "image" ? "bg-primary/15 text-primary border border-primary/30" : "bg-muted/50 text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  <Image className="h-4 w-4" /> Image Logo
+                </button>
+                <button
+                  onClick={() => canEdit && setLogoMode("text")}
+                  className={`flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium transition-colors ${
+                    logoMode === "text" ? "bg-primary/15 text-primary border border-primary/30" : "bg-muted/50 text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  <Type className="h-4 w-4" /> Text Logo
+                </button>
+              </div>
+            </div>
+
+            {logoMode === "image" && (
+              <div>
+                <label className="mb-1.5 block text-xs text-muted-foreground">Logo URL (leave empty to use default uploaded logo)</label>
+                <Input
+                  value={logoUrl}
+                  onChange={(e) => setLogoUrl(e.target.value)}
+                  placeholder="https://example.com/logo.png"
+                  disabled={!canEdit}
+                  className="bg-muted/50"
+                />
+                {(logoUrl || !logoUrl) && (
+                  <div className="mt-3 rounded-lg bg-muted/30 p-3">
+                    <p className="mb-2 text-[11px] text-muted-foreground">Preview:</p>
+                    <div className="inline-block rounded-lg bg-background p-2">
+                      {logoUrl ? (
+                        <img src={logoUrl} alt="Logo preview" className="h-8" />
+                      ) : (
+                        <p className="text-xs text-muted-foreground">Using default uploaded logo</p>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {logoMode === "text" && (
+              <div className="rounded-lg bg-muted/30 p-3">
+                <p className="mb-2 text-[11px] text-muted-foreground">Preview:</p>
+                <div className="inline-block rounded-lg bg-background px-4 py-2">
+                  <span className="text-xl font-bold text-foreground">{siteName}</span>
+                </div>
+              </div>
+            )}
+
             {canEdit && (
               <Button onClick={saveBranding} disabled={updateSetting.isPending} className="gap-2">
                 <Save className="h-4 w-4" /> Save Branding
