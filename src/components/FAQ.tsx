@@ -8,20 +8,24 @@ import {
 
 const faqs = [
   {
-    q: "Is YTFetch free to use?",
-    a: "Yes, YTFetch is 100% free for personal use — no hidden charges, no subscriptions, and no sign-up required. All tools including YouTube, TikTok, Instagram downloaders, transcript generator, and thumbnail downloader are completely free.",
+    q: "Is MinusFlow ToolKit free to use?",
+    a: "Yes, MinusFlow ToolKit is 100% free for personal use — no hidden charges, no subscriptions, and no sign-up required. All tools including YouTube, TikTok, Instagram, Facebook, and Douyin downloaders, transcript generator, and thumbnail downloader are completely free.",
   },
   {
-    q: "What tools does YTFetch offer?",
-    a: "YTFetch is a complete media toolkit. We offer: YouTube Video Downloader (MP4/MP3 in multiple qualities), TikTok Downloader (watermark-free), Instagram Downloader (reels, stories, posts), YouTube Transcript Generator, and Thumbnail Downloader. More tools are being added regularly!",
+    q: "What tools does MinusFlow ToolKit offer?",
+    a: "MinusFlow ToolKit is a complete media toolkit. We offer: YouTube Video Downloader (single, bulk, playlist), TikTok Downloader (single & bulk, watermark-free), Instagram Downloader (reels, stories, posts — single & bulk), YouTube Transcript Generator, Thumbnail Downloader, and more tools coming soon including Facebook and Douyin support!",
+  },
+  {
+    q: "What platforms are supported?",
+    a: "Currently we support YouTube, TikTok, and Instagram with full download capabilities. Facebook and Douyin (Chinese TikTok) support is coming soon. Each platform has dedicated single and bulk download tools optimized for that specific platform.",
   },
   {
     q: "What video and audio formats are supported?",
     a: "For YouTube videos, you can download in MP4 at resolutions up to 1080p Full HD, plus MP3 and M4A audio formats. TikTok videos are downloaded in MP4 without watermark. Instagram content is saved in its original format and quality.",
   },
   {
-    q: "Is YTFetch safe? Does it store my data?",
-    a: "Your privacy is our top priority. YTFetch does not store, log, or track any personal data, search history, or downloaded files. We don't use tracking cookies and never ask for personal information. Everything happens in real-time with no data saved on our servers.",
+    q: "Is MinusFlow ToolKit safe? Does it store my data?",
+    a: "Your privacy is our top priority. MinusFlow ToolKit does not store, log, or track any personal data, search history, or downloaded files. We don't use tracking cookies and never ask for personal information. Everything happens in real-time with no data saved on our servers.",
   },
   {
     q: "Why is my download not starting or failing?",
@@ -29,11 +33,15 @@ const faqs = [
   },
   {
     q: "Do I need to install any software?",
-    a: "No! YTFetch is fully web-based — no downloads, installations, plugins, or extensions required. It works on all modern browsers (Chrome, Firefox, Safari, Edge, Brave) and on mobile devices without any app. Just visit, paste, download.",
+    a: "No! MinusFlow ToolKit is fully web-based — no downloads, installations, plugins, or extensions required. It works on all modern browsers (Chrome, Firefox, Safari, Edge, Brave) and on mobile devices without any app. Just visit, paste, download.",
+  },
+  {
+    q: "How many videos can I download at once?",
+    a: "With our bulk download tools, you can process up to 10 YouTube videos, 20 TikTok videos, or 20 Instagram posts in a single batch. There are no daily limits — run as many batches as you need. YouTube Playlist Downloader can handle entire playlists automatically.",
   },
   {
     q: "Is downloading content legal?",
-    a: "Downloading content for personal, offline viewing is generally acceptable, but always respect copyright laws and platform Terms of Service. YTFetch is intended for personal use — saving educational content, tutorials, or your own uploads. We don't support redistribution or commercial use of copyrighted material.",
+    a: "Downloading content for personal, offline viewing is generally acceptable, but always respect copyright laws and platform Terms of Service. MinusFlow ToolKit is intended for personal use — saving educational content, tutorials, or your own uploads. We don't support redistribution or commercial use of copyrighted material.",
   },
 ];
 
@@ -56,7 +64,7 @@ const FAQ = () => (
         Frequently Asked Questions
       </h2>
       <p className="text-sm text-muted-foreground">
-        Everything you need to know about YTFetch
+        Everything you need to know about MinusFlow ToolKit
       </p>
     </motion.div>
     <Accordion type="single" collapsible className="space-y-2">

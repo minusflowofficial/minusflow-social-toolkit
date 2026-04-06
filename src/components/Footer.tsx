@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { Youtube, Heart } from "lucide-react";
+import { Wrench, Heart } from "lucide-react";
 import { Link } from "react-router-dom";
 
 const footerLinks = [
@@ -20,11 +20,10 @@ const Footer = () => (
     className="relative z-10 border-t border-border/30 px-6 py-10 md:px-10"
   >
     <div className="mx-auto max-w-4xl">
-      {/* Top row */}
       <div className="flex flex-col items-center gap-6 md:flex-row md:justify-between">
         <Link to="/" className="flex items-center gap-2 group">
-          <Youtube className="h-5 w-5 text-primary" />
-          <span className="text-lg font-bold text-foreground">YTFetch</span>
+          <Wrench className="h-5 w-5 text-primary" />
+          <span className="text-lg font-bold text-foreground">MinusFlow ToolKit</span>
         </Link>
 
         <p className="flex items-center gap-1 text-xs text-muted-foreground">
@@ -40,7 +39,6 @@ const Footer = () => (
         </p>
       </div>
 
-      {/* Links grid */}
       <nav className="mt-6 flex flex-wrap justify-center gap-x-6 gap-y-2 text-sm">
         {footerLinks.map((link) => (
           <Link
@@ -54,7 +52,7 @@ const Footer = () => (
       </nav>
 
       <p className="mt-6 text-center text-xs text-muted-foreground/60">
-        Free tool, for personal use only. © {new Date().getFullYear()} YTFetch
+        Free tool, for personal use only. © {new Date().getFullYear()} MinusFlow ToolKit
       </p>
     </div>
   </motion.footer>

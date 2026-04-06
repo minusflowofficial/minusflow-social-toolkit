@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { Youtube, Menu, X, ChevronDown } from "lucide-react";
+import { Wrench, Menu, X, ChevronDown } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { useState, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
@@ -71,17 +71,14 @@ const Header = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
   const { data: tools } = usePublicTools();
 
-  // Track page views
   useEffect(() => {
     trackPageView(location.pathname);
   }, [location.pathname]);
 
-  // Build dynamic downloader links from DB tools
   const downloaderLinks = tools?.map((t) => ({
     to: t.route,
     label: t.name,
   })) ?? [
-    // Fallback while loading
     { to: "/", label: "YouTube Downloader" },
     { to: "/tiktok", label: "TikTok Downloader" },
     { to: "/instagram", label: "Instagram Downloader" },
@@ -101,14 +98,17 @@ const Header = () => {
           animate={{ rotate: [0, 5, -5, 0] }}
           transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
         >
-          <Youtube className="h-8 w-8 text-primary drop-shadow-[0_0_12px_hsl(0,85%,55%,0.5)] transition-all duration-300 group-hover:drop-shadow-[0_0_20px_hsl(0,85%,55%,0.7)]" />
+          <Wrench className="h-7 w-7 text-primary drop-shadow-[0_0_12px_hsl(0,85%,55%,0.5)] transition-all duration-300 group-hover:drop-shadow-[0_0_20px_hsl(0,85%,55%,0.7)]" />
         </motion.div>
-        <span className="text-2xl font-bold tracking-tight text-foreground">YTFetch</span>
+        <div className="flex flex-col leading-none">
+          <span className="text-xl font-bold tracking-tight text-foreground">MinusFlow</span>
+          <span className="text-[10px] font-semibold tracking-widest uppercase text-primary/70">ToolKit</span>
+        </div>
       </Link>
 
       {/* Desktop Nav */}
       <nav className="hidden items-center gap-1 md:flex">
-        <DropdownMenu label="Downloaders" links={downloaderLinks} pathname={location.pathname} />
+        <DropdownMenu label="Tools" links={downloaderLinks} pathname={location.pathname} />
         <DropdownMenu label="Pages" links={pageLinks} pathname={location.pathname} />
       </nav>
 
@@ -142,8 +142,11 @@ const MobileMenu = ({ open, onClose, pathname, downloaderLinks }: { open: boolea
     >
       <div className="flex items-center justify-between px-6 py-5">
         <Link to="/" onClick={onClose} className="flex items-center gap-2.5">
-          <Youtube className="h-8 w-8 text-primary" />
-          <span className="text-2xl font-bold tracking-tight text-foreground">YTFetch</span>
+          <Wrench className="h-7 w-7 text-primary" />
+          <div className="flex flex-col leading-none">
+            <span className="text-xl font-bold tracking-tight text-foreground">MinusFlow</span>
+            <span className="text-[10px] font-semibold tracking-widest uppercase text-primary/70">ToolKit</span>
+          </div>
         </Link>
         <button onClick={onClose} className="flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground hover:text-foreground">
           <X className="h-5 w-5" />
@@ -151,13 +154,13 @@ const MobileMenu = ({ open, onClose, pathname, downloaderLinks }: { open: boolea
       </div>
       <nav className="flex flex-col gap-1 px-6 pt-2">
         <button
-          onClick={() => toggleGroup("downloaders")}
+          onClick={() => toggleGroup("tools")}
           className="flex items-center justify-between rounded-lg px-4 py-3 text-sm font-semibold text-foreground"
         >
-          Downloaders
-          <ChevronDown className={`h-4 w-4 transition-transform ${expandedGroup === "downloaders" ? "rotate-180" : ""}`} />
+          Tools
+          <ChevronDown className={`h-4 w-4 transition-transform ${expandedGroup === "tools" ? "rotate-180" : ""}`} />
         </button>
-        {expandedGroup === "downloaders" &&
+        {expandedGroup === "tools" &&
           downloaderLinks.map((link) => (
             <Link
               key={link.to}
