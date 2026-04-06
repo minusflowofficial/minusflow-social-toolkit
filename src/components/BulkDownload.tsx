@@ -33,7 +33,7 @@ const BulkDownload = () => {
   const [rawText, setRawText] = useState("");
   const [items, setItems] = useState<BulkItem[]>([]);
   const [processing, setProcessing] = useState(false);
-  const [showBulk, setShowBulk] = useState(false);
+  const [showBulk, setShowBulk] = useState(true);
 
   const parseUrls = (text: string) => {
     return text

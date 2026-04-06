@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
 import { ReactNode } from "react";
-import { LucideIcon, CheckCircle, ArrowDown, Sparkles, Star, Shield, Globe } from "lucide-react";
+import { LucideIcon, CheckCircle, Sparkles, Star, Shield, Globe } from "lucide-react";
 import {
   Accordion,
   AccordionContent,
