@@ -71,12 +71,33 @@ const DropdownMenu = ({ label, links, pathname }: { label: string; links: { to: 
 
 const Header = () => {
   const location = useLocation();
+  const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
   const { data: tools } = usePublicTools();
+  const { data: settings } = useSiteSettings();
+  const [user, setUser] = useState<any>(null);
+
+  const authEnabled = settings?.user_auth?.enabled ?? false;
 
   useEffect(() => {
     trackPageView(location.pathname);
   }, [location.pathname]);
+
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+    });
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null);
+    });
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
+    setUser(null);
+    navigate("/");
+  };
 
   const downloaderLinks = tools?.map((t) => ({
     to: t.route,
