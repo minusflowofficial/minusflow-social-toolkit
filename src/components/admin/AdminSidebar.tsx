@@ -34,7 +34,7 @@ const AdminSidebar = () => {
       {/* Header */}
       <div className="flex h-16 items-center justify-between border-b border-border/50 px-4">
         {!collapsed && (
-          <span className="text-lg font-bold text-foreground">YTFetch</span>
+          <span className="text-lg font-bold text-foreground">{siteName}</span>
         )}
         <button
           onClick={() => setCollapsed(!collapsed)}
