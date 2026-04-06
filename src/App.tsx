@@ -26,6 +26,15 @@ import AdminUsers from "./pages/admin/AdminUsers.tsx";
 import AdminAnalytics from "./pages/admin/AdminAnalytics.tsx";
 import AdminLogs from "./pages/admin/AdminLogs.tsx";
 
+// Split tool pages
+import YouTubeSingleDownloader from "./pages/YouTubeSingleDownloader.tsx";
+import YouTubeBulkDownloader from "./pages/YouTubeBulkDownloader.tsx";
+import YouTubePlaylistDownloader from "./pages/YouTubePlaylistDownloader.tsx";
+import TikTokSingleDownloader from "./pages/TikTokSingleDownloader.tsx";
+import TikTokBulkDownloader from "./pages/TikTokBulkDownloader.tsx";
+import InstagramSingleDownloader from "./pages/InstagramSingleDownloader.tsx";
+import InstagramBulkDownloader from "./pages/InstagramBulkDownloader.tsx";
+
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -42,12 +51,24 @@ const App = () => (
           <Route path="/terms" element={<Terms />} />
           <Route path="/dmca" element={<DMCA />} />
           <Route path="/disclaimer" element={<Disclaimer />} />
-          <Route path="/tiktok" element={<TikTokDownloader />} />
-          <Route path="/instagram" element={<InstagramDownloader />} />
+
+          {/* Individual tool pages */}
+          <Route path="/youtube-downloader" element={<YouTubeSingleDownloader />} />
+          <Route path="/youtube-bulk-downloader" element={<YouTubeBulkDownloader />} />
+          <Route path="/youtube-playlist-downloader" element={<YouTubePlaylistDownloader />} />
+          <Route path="/tiktok-downloader" element={<TikTokSingleDownloader />} />
+          <Route path="/tiktok-bulk-downloader" element={<TikTokBulkDownloader />} />
+          <Route path="/instagram-downloader" element={<InstagramSingleDownloader />} />
+          <Route path="/instagram-bulk-downloader" element={<InstagramBulkDownloader />} />
           <Route path="/transcript" element={<TranscriptHome />} />
           <Route path="/transcript/:videoId" element={<TranscriptView />} />
           <Route path="/transcript-history" element={<TranscriptHistory />} />
           <Route path="/thumbnail" element={<ThumbnailDownloader />} />
+
+          {/* Legacy routes → redirect to new split pages */}
+          <Route path="/tiktok" element={<TikTokDownloader />} />
+          <Route path="/instagram" element={<InstagramDownloader />} />
+
           {/* Admin routes */}
           <Route path="/admin/login" element={<AdminLogin />} />
           <Route path="/admin" element={<AdminLayout />}>
