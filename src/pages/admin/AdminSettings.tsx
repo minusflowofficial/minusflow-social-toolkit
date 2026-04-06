@@ -79,7 +79,7 @@ const AdminSettings = () => {
     try {
       await updateSetting.mutateAsync({
         key: "branding",
-        value: { site_name: siteName, logo_url: "", theme: "dark" },
+        value: { site_name: siteName, logo_url: logoUrl, logo_mode: logoMode, theme: "dark" },
       });
       toast.success("Branding saved");
     } catch (err: any) {
