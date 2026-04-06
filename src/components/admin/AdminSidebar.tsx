@@ -3,6 +3,7 @@ import { LayoutDashboard, Wrench, Settings, LogOut, ChevronLeft, ChevronRight, U
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
+import { useSiteSettings } from "@/hooks/useSiteSettings";
 
 const navItems = [
   { to: "/admin", icon: LayoutDashboard, label: "Dashboard", exact: true },
@@ -17,6 +18,8 @@ const AdminSidebar = () => {
   const location = useLocation();
   const [collapsed, setCollapsed] = useState(false);
   const { signOut, user, role } = useAuth();
+  const { data: settings } = useSiteSettings();
+  const siteName = settings?.branding?.site_name || "MinusFlow ToolKit";
 
   const isActive = (path: string, exact?: boolean) =>
     exact ? location.pathname === path : location.pathname.startsWith(path);
@@ -31,7 +34,7 @@ const AdminSidebar = () => {
       {/* Header */}
       <div className="flex h-16 items-center justify-between border-b border-border/50 px-4">
         {!collapsed && (
-          <span className="text-lg font-bold text-foreground">YTFetch</span>
+          <span className="text-lg font-bold text-foreground">{siteName}</span>
         )}
         <button
           onClick={() => setCollapsed(!collapsed)}
