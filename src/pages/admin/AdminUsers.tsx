@@ -211,6 +211,7 @@ const AdminUsers = () => {
                   onChange={(e) => updateRole.mutate({ user_id: user.id, role: e.target.value })}
                   className="h-8 rounded-md border border-border/50 bg-muted/50 px-2 text-xs text-foreground"
                 >
+                  <option value="user">User</option>
                   <option value="admin">Admin</option>
                   <option value="super_admin">Super Admin</option>
                 </select>
