@@ -230,27 +230,42 @@ const AdminSettings = () => {
             </div>
 
             {logoMode === "image" && (
-              <div>
-                <label className="mb-1.5 block text-xs text-muted-foreground">Logo URL (leave empty to use default uploaded logo)</label>
-                <Input
-                  value={logoUrl}
-                  onChange={(e) => setLogoUrl(e.target.value)}
-                  placeholder="https://example.com/logo.png"
-                  disabled={!canEdit}
-                  className="bg-muted/50"
-                />
-                {(logoUrl || !logoUrl) && (
-                  <div className="mt-3 rounded-lg bg-muted/30 p-3">
-                    <p className="mb-2 text-[11px] text-muted-foreground">Preview:</p>
-                    <div className="inline-block rounded-lg bg-background p-2">
-                      {logoUrl ? (
-                        <img src={logoUrl} alt="Logo preview" className="h-8" />
-                      ) : (
-                        <p className="text-xs text-muted-foreground">Using default uploaded logo</p>
-                      )}
-                    </div>
+              <div className="space-y-4">
+                <div>
+                  <label className="mb-1.5 block text-xs text-muted-foreground">Logo URL (leave empty to use default uploaded logo)</label>
+                  <Input
+                    value={logoUrl}
+                    onChange={(e) => setLogoUrl(e.target.value)}
+                    placeholder="https://example.com/logo.png"
+                    disabled={!canEdit}
+                    className="bg-muted/50"
+                  />
+                </div>
+                <div>
+                  <label className="mb-1.5 block text-xs text-muted-foreground">Logo Size: {logoSize}px</label>
+                  <input
+                    type="range"
+                    min="20"
+                    max="80"
+                    value={logoSize}
+                    onChange={(e) => setLogoSize(Number(e.target.value))}
+                    disabled={!canEdit}
+                    className="w-full accent-primary"
+                  />
+                  <div className="mt-1 flex justify-between text-[10px] text-muted-foreground">
+                    <span>20px</span><span>50px</span><span>80px</span>
                   </div>
-                )}
+                </div>
+                <div className="rounded-lg bg-muted/30 p-3">
+                  <p className="mb-2 text-[11px] text-muted-foreground">Preview:</p>
+                  <div className="inline-block rounded-lg bg-background p-3">
+                    {logoUrl ? (
+                      <img src={logoUrl} alt="Logo preview" style={{ height: logoSize }} />
+                    ) : (
+                      <p className="text-xs text-muted-foreground">Using default uploaded logo ({logoSize}px height)</p>
+                    )}
+                  </div>
+                </div>
               </div>
             )}
 
@@ -258,10 +273,34 @@ const AdminSettings = () => {
               <div className="rounded-lg bg-muted/30 p-3">
                 <p className="mb-2 text-[11px] text-muted-foreground">Preview:</p>
                 <div className="inline-block rounded-lg bg-background px-4 py-2">
-                  <span className="text-xl font-bold text-foreground">{siteName}</span>
+                  <span className="font-bold text-foreground" style={{ fontSize: logoSize }}>{siteName}</span>
                 </div>
               </div>
             )}
+
+            {/* Favicon */}
+            <div>
+              <label className="mb-1.5 block text-xs text-muted-foreground">Favicon URL (leave empty for default)</label>
+              <Input
+                value={favicon}
+                onChange={(e) => setFavicon(e.target.value)}
+                placeholder="https://example.com/favicon.ico"
+                disabled={!canEdit}
+                className="bg-muted/50"
+              />
+            </div>
+
+            {/* Footer Text */}
+            <div>
+              <label className="mb-1.5 block text-xs text-muted-foreground">Footer Text</label>
+              <Input
+                value={footerText}
+                onChange={(e) => setFooterText(e.target.value)}
+                disabled={!canEdit}
+                className="bg-muted/50"
+                placeholder="Free tool, for personal use only."
+              />
+            </div>
 
             {canEdit && (
               <Button onClick={saveBranding} disabled={updateSetting.isPending} className="gap-2">
