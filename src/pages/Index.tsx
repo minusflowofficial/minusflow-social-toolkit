@@ -13,6 +13,7 @@ import Footer from "@/components/Footer";
 import ScrollProgress from "@/components/ScrollProgress";
 import AnimatedCounter from "@/components/AnimatedCounter";
 import useDownloadCount from "@/hooks/useDownloadCount";
+import { trackToolUsage } from "@/lib/analytics";
 import { toast } from "sonner";
 
 interface MediaItem {
