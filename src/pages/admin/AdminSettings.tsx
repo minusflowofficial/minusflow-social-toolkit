@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Save, AlertTriangle, Globe, Palette, Flag, Plus, Trash2, X, Gauge, Image, Type } from "lucide-react";
+import { Save, AlertTriangle, Globe, Palette, Flag, Plus, Trash2, X, Gauge, Image, Type, LogIn } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useSiteSettings, useUpdateSetting } from "@/hooks/useSiteSettings";

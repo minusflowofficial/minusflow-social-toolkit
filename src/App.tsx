@@ -69,6 +69,8 @@ const App = () => (
 
           {/* Legacy routes → redirect to new split pages */}
           <Route path="/tiktok" element={<TikTokDownloader />} />
+          <Route path="/signin" element={<SignIn />} />
+          <Route path="/signup" element={<SignUp />} />
           <Route path="/instagram" element={<InstagramDownloader />} />
 
           {/* Admin routes */}
