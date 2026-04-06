@@ -11,7 +11,7 @@ import { toast } from "sonner";
 interface AdminUser {
   id: string;
   email: string;
-  role: "super_admin" | "admin";
+  role: "super_admin" | "admin" | "user";
   created_at: string;
 }
 
