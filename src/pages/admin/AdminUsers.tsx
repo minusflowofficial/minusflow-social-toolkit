@@ -187,12 +187,14 @@ const AdminUsers = () => {
             >
               <div className="flex items-center gap-3">
                 <div className={`flex h-9 w-9 items-center justify-center rounded-lg ${
-                  user.role === "super_admin" ? "bg-primary/10" : "bg-blue-500/10"
+                  user.role === "super_admin" ? "bg-primary/10" : user.role === "admin" ? "bg-blue-500/10" : "bg-green-500/10"
                 }`}>
                   {user.role === "super_admin" ? (
                     <ShieldCheck className="h-4.5 w-4.5 text-primary" />
-                  ) : (
+                  ) : user.role === "admin" ? (
                     <Shield className="h-4.5 w-4.5 text-blue-500" />
+                  ) : (
+                    <User className="h-4.5 w-4.5 text-green-500" />
                   )}
                 </div>
                 <div>
