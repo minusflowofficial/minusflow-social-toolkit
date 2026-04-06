@@ -23,6 +23,9 @@ const AdminSettings = () => {
   const [siteName, setSiteName] = useState("MinusFlow ToolKit");
   const [logoUrl, setLogoUrl] = useState("");
   const [logoMode, setLogoMode] = useState<"image" | "text">("image");
+  const [logoSize, setLogoSize] = useState(36);
+  const [favicon, setFavicon] = useState("");
+  const [footerText, setFooterText] = useState("Free tool, for personal use only.");
 
   // Site status
   const [siteEnabled, setSiteEnabled] = useState(true);
