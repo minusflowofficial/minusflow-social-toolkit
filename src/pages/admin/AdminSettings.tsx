@@ -45,7 +45,9 @@ const AdminSettings = () => {
       setAdminBypass(mm.admin_bypass ?? true);
 
       const br = settings.branding || {};
-      setSiteName(br.site_name ?? "YTFetch");
+      setSiteName(br.site_name ?? "MinusFlow ToolKit");
+      setLogoUrl(br.logo_url ?? "");
+      setLogoMode(br.logo_mode ?? "image");
 
       setSiteEnabled(settings.site_status?.enabled ?? true);
 
