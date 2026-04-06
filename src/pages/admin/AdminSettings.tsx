@@ -20,7 +20,7 @@ const AdminSettings = () => {
   const [adminBypass, setAdminBypass] = useState(true);
 
   // Branding
-  const [siteName, setSiteName] = useState("YTFetch");
+  const [siteName, setSiteName] = useState("MinusFlow ToolKit");
 
   // Site status
   const [siteEnabled, setSiteEnabled] = useState(true);
