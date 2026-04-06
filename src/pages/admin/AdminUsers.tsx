@@ -200,7 +200,7 @@ const AdminUsers = () => {
                 <div>
                   <p className="text-sm font-medium text-foreground">{user.email}</p>
                   <p className="text-xs text-muted-foreground">
-                    {user.role === "super_admin" ? "Super Admin" : "Admin"} · Joined {new Date(user.created_at).toLocaleDateString()}
+                    {user.role === "super_admin" ? "Super Admin" : user.role === "admin" ? "Admin" : "User"} · Joined {new Date(user.created_at).toLocaleDateString()}
                   </p>
                 </div>
               </div>
