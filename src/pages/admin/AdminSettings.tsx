@@ -21,6 +21,8 @@ const AdminSettings = () => {
 
   // Branding
   const [siteName, setSiteName] = useState("MinusFlow ToolKit");
+  const [logoUrl, setLogoUrl] = useState("");
+  const [logoMode, setLogoMode] = useState<"image" | "text">("image");
 
   // Site status
   const [siteEnabled, setSiteEnabled] = useState(true);
