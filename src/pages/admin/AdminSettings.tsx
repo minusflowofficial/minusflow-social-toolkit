@@ -182,8 +182,97 @@ const AdminSettings = () => {
             )}
           </div>
         </motion.div>
+
+        {/* Feature Flags */}
+        <FeatureFlagsSection canEdit={canEdit} />
       </div>
     </div>
+  );
+};
+
+const FeatureFlagsSection = ({ canEdit }: { canEdit: boolean }) => {
+  const { data: flags, isLoading } = useFeatureFlags();
+  const toggleFlag = useToggleFlag();
+  const createFlag = useCreateFlag();
+  const deleteFlag = useDeleteFlag();
+  const [showAdd, setShowAdd] = useState(false);
+  const [newName, setNewName] = useState("");
+  const [newDesc, setNewDesc] = useState("");
+
+  const handleCreate = async () => {
+    if (!newName.trim()) return;
+    try {
+      await createFlag.mutateAsync({ name: newName.trim().toLowerCase().replace(/\s+/g, "_"), description: newDesc, enabled: true });
+      toast.success("Flag created");
+      setShowAdd(false);
+      setNewName("");
+      setNewDesc("");
+    } catch (err: any) {
+      toast.error(err.message);
+    }
+  };
+
+  return (
+    <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="rounded-xl border border-border/50 bg-card p-6">
+      <div className="mb-4 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <Flag className="h-5 w-5 text-primary" />
+          <h2 className="text-lg font-semibold text-foreground">Feature Flags</h2>
+        </div>
+        {canEdit && (
+          <button
+            onClick={() => setShowAdd(!showAdd)}
+            className="rounded-lg p-2 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+          >
+            {showAdd ? <X className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
+          </button>
+        )}
+      </div>
+
+      {showAdd && (
+        <div className="mb-4 space-y-2 rounded-lg bg-muted/30 p-4">
+          <Input value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="flag_name" className="bg-muted/50" />
+          <Input value={newDesc} onChange={(e) => setNewDesc(e.target.value)} placeholder="Description" className="bg-muted/50" />
+          <Button size="sm" onClick={handleCreate} disabled={createFlag.isPending}>Create Flag</Button>
+        </div>
+      )}
+
+      <div className="space-y-2">
+        {isLoading ? (
+          [1, 2, 3].map((i) => <div key={i} className="h-12 animate-pulse rounded-lg bg-muted/30" />)
+        ) : flags?.map((flag) => (
+          <div key={flag.id} className="flex items-center justify-between rounded-lg bg-muted/30 px-4 py-3">
+            <div>
+              <p className="text-sm font-medium text-foreground">{flag.name}</p>
+              <p className="text-xs text-muted-foreground">{flag.description}</p>
+            </div>
+            <div className="flex items-center gap-2">
+              {canEdit && (
+                <>
+                  <button
+                    onClick={() => toggleFlag.mutate({ id: flag.id, enabled: !flag.enabled })}
+                    className={`relative h-6 w-10 rounded-full transition-colors ${flag.enabled ? "bg-green-500" : "bg-muted"}`}
+                  >
+                    <span className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-all ${flag.enabled ? "left-4.5" : "left-0.5"}`} />
+                  </button>
+                  <button
+                    onClick={() => { if (confirm(`Delete flag "${flag.name}"?`)) deleteFlag.mutate(flag.id); }}
+                    className="rounded-lg p-1.5 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </button>
+                </>
+              )}
+              {!canEdit && (
+                <span className={`text-xs font-medium ${flag.enabled ? "text-green-500" : "text-red-500"}`}>
+                  {flag.enabled ? "ON" : "OFF"}
+                </span>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+    </motion.div>
   );
 };
 
