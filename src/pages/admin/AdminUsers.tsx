@@ -2,7 +2,7 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Plus, Trash2, Shield, ShieldCheck, X, Loader2, UserPlus } from "lucide-react";
+import { Plus, Trash2, Shield, ShieldCheck, X, Loader2, UserPlus, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/hooks/useAuth";
@@ -11,7 +11,7 @@ import { toast } from "sonner";
 interface AdminUser {
   id: string;
   email: string;
-  role: "super_admin" | "admin";
+  role: "super_admin" | "admin" | "user";
   created_at: string;
 }
 
@@ -23,7 +23,7 @@ const AdminUsers = () => {
   const [showAdd, setShowAdd] = useState(false);
   const [newEmail, setNewEmail] = useState("");
   const [newPassword, setNewPassword] = useState("");
-  const [newRole, setNewRole] = useState<"admin" | "super_admin">("admin");
+  const [newRole, setNewRole] = useState<"admin" | "super_admin" | "user">("user");
 
   const { data: users, isLoading } = useQuery({
     queryKey: ["admin-users"],
@@ -150,6 +150,7 @@ const AdminUsers = () => {
                   onChange={(e) => setNewRole(e.target.value as any)}
                   className="h-10 w-full rounded-md border border-input bg-muted/50 px-3 text-sm text-foreground"
                 >
+                  <option value="user">User</option>
                   <option value="admin">Admin</option>
                   <option value="super_admin">Super Admin</option>
                 </select>
@@ -186,18 +187,20 @@ const AdminUsers = () => {
             >
               <div className="flex items-center gap-3">
                 <div className={`flex h-9 w-9 items-center justify-center rounded-lg ${
-                  user.role === "super_admin" ? "bg-primary/10" : "bg-blue-500/10"
+                  user.role === "super_admin" ? "bg-primary/10" : user.role === "admin" ? "bg-blue-500/10" : "bg-green-500/10"
                 }`}>
                   {user.role === "super_admin" ? (
                     <ShieldCheck className="h-4.5 w-4.5 text-primary" />
-                  ) : (
+                  ) : user.role === "admin" ? (
                     <Shield className="h-4.5 w-4.5 text-blue-500" />
+                  ) : (
+                    <User className="h-4.5 w-4.5 text-green-500" />
                   )}
                 </div>
                 <div>
                   <p className="text-sm font-medium text-foreground">{user.email}</p>
                   <p className="text-xs text-muted-foreground">
-                    {user.role === "super_admin" ? "Super Admin" : "Admin"} · Joined {new Date(user.created_at).toLocaleDateString()}
+                    {user.role === "super_admin" ? "Super Admin" : user.role === "admin" ? "Admin" : "User"} · Joined {new Date(user.created_at).toLocaleDateString()}
                   </p>
                 </div>
               </div>
@@ -208,6 +211,7 @@ const AdminUsers = () => {
                   onChange={(e) => updateRole.mutate({ user_id: user.id, role: e.target.value })}
                   className="h-8 rounded-md border border-border/50 bg-muted/50 px-2 text-xs text-foreground"
                 >
+                  <option value="user">User</option>
                   <option value="admin">Admin</option>
                   <option value="super_admin">Super Admin</option>
                 </select>
