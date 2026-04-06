@@ -17,6 +17,11 @@ import TranscriptHome from "./pages/TranscriptHome.tsx";
 import TranscriptView from "./pages/TranscriptView.tsx";
 import TranscriptHistory from "./pages/TranscriptHistory.tsx";
 import ThumbnailDownloader from "./pages/ThumbnailDownloader.tsx";
+import AdminLogin from "./pages/AdminLogin.tsx";
+import AdminLayout from "./components/admin/AdminLayout.tsx";
+import AdminDashboard from "./pages/admin/AdminDashboard.tsx";
+import AdminTools from "./pages/admin/AdminTools.tsx";
+import AdminSettings from "./pages/admin/AdminSettings.tsx";
 
 const queryClient = new QueryClient();
 
@@ -40,6 +45,13 @@ const App = () => (
           <Route path="/transcript/:videoId" element={<TranscriptView />} />
           <Route path="/transcript-history" element={<TranscriptHistory />} />
           <Route path="/thumbnail" element={<ThumbnailDownloader />} />
+          {/* Admin routes */}
+          <Route path="/admin/login" element={<AdminLogin />} />
+          <Route path="/admin" element={<AdminLayout />}>
+            <Route index element={<AdminDashboard />} />
+            <Route path="tools" element={<AdminTools />} />
+            <Route path="settings" element={<AdminSettings />} />
+          </Route>
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
