@@ -23,7 +23,7 @@ const AdminUsers = () => {
   const [showAdd, setShowAdd] = useState(false);
   const [newEmail, setNewEmail] = useState("");
   const [newPassword, setNewPassword] = useState("");
-  const [newRole, setNewRole] = useState<"admin" | "super_admin">("admin");
+  const [newRole, setNewRole] = useState<"admin" | "super_admin" | "user">("user");
 
   const { data: users, isLoading } = useQuery({
     queryKey: ["admin-users"],
