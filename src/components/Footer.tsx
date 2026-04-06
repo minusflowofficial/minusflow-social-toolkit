@@ -1,6 +1,7 @@
 import { motion } from "framer-motion";
-import { Wrench, Heart } from "lucide-react";
+import { Heart } from "lucide-react";
 import { Link } from "react-router-dom";
+import logoImg from "@/assets/logo-red.png";
 
 const footerLinks = [
   { to: "/about", label: "About Us" },
