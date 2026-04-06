@@ -1,6 +1,7 @@
 import { motion } from "framer-motion";
-import { Wrench, Heart } from "lucide-react";
+import { Heart } from "lucide-react";
 import { Link } from "react-router-dom";
+import logoImg from "@/assets/logo-red.png";
 
 const footerLinks = [
   { to: "/about", label: "About Us" },
@@ -21,9 +22,8 @@ const Footer = () => (
   >
     <div className="mx-auto max-w-4xl">
       <div className="flex flex-col items-center gap-6 md:flex-row md:justify-between">
-        <Link to="/" className="flex items-center gap-2 group">
-          <Wrench className="h-5 w-5 text-primary" />
-          <span className="text-lg font-bold text-foreground">MinusFlow ToolKit</span>
+        <Link to="/" className="flex items-center group">
+          <img src={logoImg} alt="MinusFlow ToolKit" className="h-7" />
         </Link>
 
         <p className="flex items-center gap-1 text-xs text-muted-foreground">

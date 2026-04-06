@@ -1,5 +1,6 @@
 import { motion } from "framer-motion";
-import { Wrench, Menu, X, ChevronDown } from "lucide-react";
+import { Menu, X, ChevronDown } from "lucide-react";
+import logoImg from "@/assets/logo-red.png";
 import { Link, useLocation } from "react-router-dom";
 import { useState, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
@@ -93,17 +94,8 @@ const Header = () => {
       transition={{ duration: 0.6, ease: [0.25, 0.46, 0.45, 0.94] }}
       className="relative z-20 flex items-center justify-between px-6 py-5 md:px-10"
     >
-      <Link to="/" className="flex items-center gap-2.5 group">
-        <motion.div
-          animate={{ rotate: [0, 5, -5, 0] }}
-          transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-        >
-          <Wrench className="h-7 w-7 text-primary drop-shadow-[0_0_12px_hsl(0,85%,55%,0.5)] transition-all duration-300 group-hover:drop-shadow-[0_0_20px_hsl(0,85%,55%,0.7)]" />
-        </motion.div>
-        <div className="flex flex-col leading-none">
-          <span className="text-xl font-bold tracking-tight text-foreground">MinusFlow</span>
-          <span className="text-[10px] font-semibold tracking-widest uppercase text-primary/70">ToolKit</span>
-        </div>
+      <Link to="/" className="flex items-center group">
+        <img src={logoImg} alt="MinusFlow ToolKit" className="h-9 drop-shadow-[0_0_12px_hsl(0,85%,55%,0.3)] transition-all duration-300 group-hover:drop-shadow-[0_0_20px_hsl(0,85%,55%,0.5)]" />
       </Link>
 
       {/* Desktop Nav */}
@@ -141,12 +133,8 @@ const MobileMenu = ({ open, onClose, pathname, downloaderLinks }: { open: boolea
       style={{ backgroundColor: "hsl(0 0% 3%)" }}
     >
       <div className="flex items-center justify-between px-6 py-5">
-        <Link to="/" onClick={onClose} className="flex items-center gap-2.5">
-          <Wrench className="h-7 w-7 text-primary" />
-          <div className="flex flex-col leading-none">
-            <span className="text-xl font-bold tracking-tight text-foreground">MinusFlow</span>
-            <span className="text-[10px] font-semibold tracking-widest uppercase text-primary/70">ToolKit</span>
-          </div>
+        <Link to="/" onClick={onClose} className="flex items-center">
+          <img src={logoImg} alt="MinusFlow ToolKit" className="h-9" />
         </Link>
         <button onClick={onClose} className="flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground hover:text-foreground">
           <X className="h-5 w-5" />
