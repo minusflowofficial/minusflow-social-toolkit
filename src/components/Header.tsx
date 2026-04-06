@@ -1,11 +1,13 @@
 import { motion } from "framer-motion";
-import { Menu, X, ChevronDown } from "lucide-react";
+import { Menu, X, ChevronDown, LogIn, UserPlus, LogOut, User } from "lucide-react";
 import logoImg from "@/assets/logo.png";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useState, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { usePublicTools } from "@/hooks/useTools";
 import { trackPageView } from "@/lib/analytics";
+import { useSiteSettings } from "@/hooks/useSiteSettings";
+import { supabase } from "@/integrations/supabase/client";
 
 const pageLinks = [
   { to: "/about", label: "About Us" },
