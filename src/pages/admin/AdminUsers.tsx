@@ -150,6 +150,7 @@ const AdminUsers = () => {
                   onChange={(e) => setNewRole(e.target.value as any)}
                   className="h-10 w-full rounded-md border border-input bg-muted/50 px-3 text-sm text-foreground"
                 >
+                  <option value="user">User</option>
                   <option value="admin">Admin</option>
                   <option value="super_admin">Super Admin</option>
                 </select>
