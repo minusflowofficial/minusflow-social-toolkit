@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Mail, MessageSquare, Send, User } from "lucide-react";
+import { Mail, MessageSquare, Send, User, Globe, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
@@ -44,7 +44,7 @@ const Contact = () => {
             transition={{ duration: 0.5 }}
             className="mb-4 text-center text-4xl font-bold text-foreground"
           >
-            Contact Us
+            Contact <span className="text-primary">Us</span>
           </motion.h1>
           <motion.p
             initial={{ opacity: 0, y: 20 }}
@@ -52,8 +52,28 @@ const Contact = () => {
             transition={{ delay: 0.1, duration: 0.5 }}
             className="mb-12 text-center text-muted-foreground"
           >
-            Have a question, suggestion, or issue? We'd love to hear from you.
+            Have a question about MinusFlow ToolKit, want to suggest a new platform, or report an issue? We'd love to hear from you.
           </motion.p>
+
+          {/* Quick info cards */}
+          <motion.div
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.15, duration: 0.5 }}
+            className="mb-8 grid grid-cols-1 gap-3 sm:grid-cols-3"
+          >
+            {[
+              { icon: Mail, label: "Email", value: "contact@minusflow.net" },
+              { icon: Clock, label: "Response Time", value: "Within 48 hours" },
+              { icon: Globe, label: "Platforms", value: "YouTube, TikTok, IG & more" },
+            ].map((item, i) => (
+              <div key={i} className="glass flex flex-col items-center gap-2 rounded-xl p-4 text-center">
+                <item.icon className="h-5 w-5 text-primary" />
+                <p className="text-xs font-semibold text-foreground">{item.label}</p>
+                <p className="text-[11px] text-muted-foreground">{item.value}</p>
+              </div>
+            ))}
+          </motion.div>
 
           <motion.form
             onSubmit={handleSubmit}
@@ -93,7 +113,7 @@ const Contact = () => {
               <textarea
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
-                placeholder="Tell us what's on your mind..."
+                placeholder="Tell us what's on your mind... feature request, bug report, or just say hi!"
                 rows={5}
                 className="glass w-full rounded-lg px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground outline-none transition-all duration-300 focus:shadow-[0_0_20px_hsl(0,85%,55%,0.15)] resize-none"
               />

@@ -7,31 +7,39 @@ import ScrollProgress from "@/components/ScrollProgress";
 const sections = [
   {
     title: "Information We Collect",
-    content: "YTFetch does not collect, store, or track any personal information. We do not require account creation or sign-up. The YouTube URLs you submit are processed in real-time and are never stored on our servers.",
+    content: "MinusFlow ToolKit does not collect, store, or track any personal information. We do not require account creation or sign-up. The URLs you submit (YouTube, TikTok, Instagram, etc.) are processed in real-time and are never stored on our servers.",
   },
   {
     title: "How We Use Information",
-    content: "The only data processed is the YouTube URL you provide, which is used solely to fetch available download formats. This data is processed in memory and discarded immediately after your request is complete.",
+    content: "The only data processed is the URL you provide, which is used solely to fetch available download formats from the respective platform. This data is processed in memory and discarded immediately after your request is complete.",
+  },
+  {
+    title: "Supported Platforms",
+    content: "MinusFlow ToolKit processes URLs from YouTube, TikTok, Instagram, and additional platforms as they are added. Regardless of the platform, the same privacy standards apply — no data is stored, logged, or shared.",
   },
   {
     title: "Cookies & Tracking",
-    content: "YTFetch does not use cookies, analytics trackers, or any third-party tracking scripts. Your browsing activity on our site is completely private.",
+    content: "MinusFlow ToolKit does not use cookies, analytics trackers, or any third-party tracking scripts. Your browsing activity on our site is completely private.",
   },
   {
     title: "Third-Party Services",
-    content: "We use third-party APIs to process video download requests. These services may have their own privacy policies. We do not share any personally identifiable information with these services.",
+    content: "We use third-party APIs to process video download requests for various platforms. These services may have their own privacy policies. We do not share any personally identifiable information with these services.",
   },
   {
     title: "Data Security",
     content: "All communications between your browser and our servers are encrypted using HTTPS. Since we don't store any data, there is no risk of data breaches affecting your personal information.",
   },
   {
+    title: "Local Storage",
+    content: "Some features (like transcript history) may use your browser's localStorage to save data locally on your device. This data never leaves your browser and can be cleared at any time through your browser settings.",
+  },
+  {
     title: "Changes to This Policy",
-    content: "We may update this privacy policy from time to time. Any changes will be reflected on this page with an updated revision date.",
+    content: "We may update this privacy policy from time to time as we add new platforms and features. Any changes will be reflected on this page with an updated revision date.",
   },
   {
     title: "Contact Us",
-    content: "If you have any questions about this privacy policy, please reach out to us through MinusFlow.net.",
+    content: "If you have any questions about this privacy policy, please reach out to us at contact@minusflow.net.",
   },
 ];
 
@@ -49,7 +57,7 @@ const Privacy = () => (
           transition={{ duration: 0.5 }}
           className="mb-4 text-center text-4xl font-bold text-foreground"
         >
-          Privacy Policy
+          Privacy <span className="text-primary">Policy</span>
         </motion.h1>
         <motion.p
           initial={{ opacity: 0, y: 20 }}

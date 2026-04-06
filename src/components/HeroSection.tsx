@@ -13,7 +13,7 @@ const HeroSection = () => {
       >
         <span className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-4 py-1.5 text-xs font-medium tracking-wide text-primary">
           <Sparkles className="h-3.5 w-3.5" />
-          100% Free — No Sign-up Required
+          YouTube · TikTok · Instagram · Facebook · Douyin & More
         </span>
       </motion.div>
 
@@ -27,9 +27,8 @@ const HeroSection = () => {
         Your Ultimate{" "}
         <span className="relative inline-block">
           <span className="bg-gradient-to-r from-primary via-orange-400 to-primary bg-[length:200%_auto] bg-clip-text text-transparent animate-[gradient-shift_4s_ease_infinite]">
-            Media Toolkit
+            Media ToolKit
           </span>
-          {/* Underline glow */}
           <motion.span
             initial={{ scaleX: 0 }}
             animate={{ scaleX: 1 }}
@@ -47,7 +46,7 @@ const HeroSection = () => {
         className="mb-8 max-w-xl text-base leading-relaxed text-muted-foreground md:text-lg"
       >
         Download videos, extract transcripts, grab thumbnails — all from one place.
-        Fast, free, and works with YouTube, TikTok & Instagram.
+        Fast, free, and works with YouTube, TikTok, Instagram, Facebook, Douyin & more.
       </motion.p>
 
       {/* Powered by */}
