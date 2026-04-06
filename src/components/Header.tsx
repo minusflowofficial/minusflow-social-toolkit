@@ -3,15 +3,8 @@ import { Youtube, Menu, X, ChevronDown } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { useState, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
-
-const downloaderLinks = [
-  { to: "/", label: "YouTube Downloader" },
-  { to: "/tiktok", label: "TikTok Downloader" },
-  { to: "/instagram", label: "Instagram Downloader" },
-  { to: "/transcript", label: "YouTube Transcript" },
-  { to: "/transcript-history", label: "Transcript History" },
-  { to: "/thumbnail", label: "Thumbnail Downloader" },
-];
+import { usePublicTools } from "@/hooks/useTools";
+import { trackPageView } from "@/lib/analytics";
 
 const pageLinks = [
   { to: "/about", label: "About Us" },
@@ -76,6 +69,25 @@ const DropdownMenu = ({ label, links, pathname }: { label: string; links: { to: 
 const Header = () => {
   const location = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const { data: tools } = usePublicTools();
+
+  // Track page views
+  useEffect(() => {
+    trackPageView(location.pathname);
+  }, [location.pathname]);
+
+  // Build dynamic downloader links from DB tools
+  const downloaderLinks = tools?.map((t) => ({
+    to: t.route,
+    label: t.name,
+  })) ?? [
+    // Fallback while loading
+    { to: "/", label: "YouTube Downloader" },
+    { to: "/tiktok", label: "TikTok Downloader" },
+    { to: "/instagram", label: "Instagram Downloader" },
+    { to: "/transcript", label: "YouTube Transcript" },
+    { to: "/thumbnail", label: "Thumbnail Downloader" },
+  ];
 
   return (
     <motion.header
@@ -108,12 +120,12 @@ const Header = () => {
         {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
       </button>
 
-      <MobileMenu open={mobileOpen} onClose={() => setMobileOpen(false)} pathname={location.pathname} />
+      <MobileMenu open={mobileOpen} onClose={() => setMobileOpen(false)} pathname={location.pathname} downloaderLinks={downloaderLinks} />
     </motion.header>
   );
 };
 
-const MobileMenu = ({ open, onClose, pathname }: { open: boolean; onClose: () => void; pathname: string }) => {
+const MobileMenu = ({ open, onClose, pathname, downloaderLinks }: { open: boolean; onClose: () => void; pathname: string; downloaderLinks: { to: string; label: string }[] }) => {
   const [expandedGroup, setExpandedGroup] = useState<string | null>(null);
 
   if (!open) return null;
@@ -138,7 +150,6 @@ const MobileMenu = ({ open, onClose, pathname }: { open: boolean; onClose: () =>
         </button>
       </div>
       <nav className="flex flex-col gap-1 px-6 pt-2">
-        {/* Downloaders group */}
         <button
           onClick={() => toggleGroup("downloaders")}
           className="flex items-center justify-between rounded-lg px-4 py-3 text-sm font-semibold text-foreground"
@@ -160,7 +171,6 @@ const MobileMenu = ({ open, onClose, pathname }: { open: boolean; onClose: () =>
             </Link>
           ))}
 
-        {/* Pages group */}
         <button
           onClick={() => toggleGroup("pages")}
           className="flex items-center justify-between rounded-lg px-4 py-3 text-sm font-semibold text-foreground"

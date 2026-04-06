@@ -1,5 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
-import { LayoutDashboard, Wrench, Settings, LogOut, ChevronLeft, ChevronRight, Users } from "lucide-react";
+import { LayoutDashboard, Wrench, Settings, LogOut, ChevronLeft, ChevronRight, Users, BarChart3, FileText } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
@@ -7,6 +7,8 @@ import { useAuth } from "@/hooks/useAuth";
 const navItems = [
   { to: "/admin", icon: LayoutDashboard, label: "Dashboard", exact: true },
   { to: "/admin/tools", icon: Wrench, label: "Tools" },
+  { to: "/admin/analytics", icon: BarChart3, label: "Analytics" },
+  { to: "/admin/logs", icon: FileText, label: "Logs" },
   { to: "/admin/users", icon: Users, label: "Users" },
   { to: "/admin/settings", icon: Settings, label: "Settings" },
 ];

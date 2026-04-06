@@ -13,6 +13,7 @@ import Footer from "@/components/Footer";
 import ScrollProgress from "@/components/ScrollProgress";
 import AnimatedCounter from "@/components/AnimatedCounter";
 import useDownloadCount from "@/hooks/useDownloadCount";
+import { trackToolUsage } from "@/lib/analytics";
 import { toast } from "sonner";
 
 interface MediaItem {
@@ -56,6 +57,7 @@ const Index = () => {
     setFormats([]);
     setTitle("");
     setThumbnail("");
+    const start = Date.now();
 
     try {
       const { data, error } = await supabase.functions.invoke("youtube-download", {
@@ -64,13 +66,16 @@ const Index = () => {
       if (error) throw error;
       if (!data || !data.mediaItems?.length) {
         toast.error("No downloadable formats found");
+        trackToolUsage({ tool_name: "YouTube Downloader", tool_slug: "youtube-downloader", status: "error", input_url: url.trim(), error_message: "No formats found", duration_ms: Date.now() - start });
         return;
       }
       setTitle(data.title || "");
       setThumbnail(data.thumbnail || "");
       setFormats(data.mediaItems);
+      trackToolUsage({ tool_name: "YouTube Downloader", tool_slug: "youtube-downloader", status: "success", input_url: url.trim(), duration_ms: Date.now() - start });
     } catch (err: any) {
       toast.error(err.message || "Failed to fetch video info");
+      trackToolUsage({ tool_name: "YouTube Downloader", tool_slug: "youtube-downloader", status: "error", input_url: url.trim(), error_message: err.message, duration_ms: Date.now() - start });
     } finally {
       setLoading(false);
     }
