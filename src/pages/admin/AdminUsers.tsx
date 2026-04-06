@@ -40,7 +40,7 @@ const AdminUsers = () => {
   const createUser = useMutation({
     mutationFn: async () => {
       const { data, error } = await supabase.functions.invoke("admin-users", {
-        body: { action: "create", email: newEmail, password: newPassword, role: newRole },
+        body: { action: "create", email: newEmail.trim().toLowerCase(), password: newPassword, role: newRole },
       });
       if (error) throw error;
       if (data.error) throw new Error(data.error);
