@@ -173,7 +173,7 @@ const Header = () => {
   );
 };
 
-const MobileMenu = ({ open, onClose, pathname, downloaderLinks }: { open: boolean; onClose: () => void; pathname: string; downloaderLinks: { to: string; label: string }[] }) => {
+const MobileMenu = ({ open, onClose, pathname, downloaderLinks, authEnabled, user, onSignOut }: { open: boolean; onClose: () => void; pathname: string; downloaderLinks: { to: string; label: string }[]; authEnabled: boolean; user: any; onSignOut: () => void }) => {
   const [expandedGroup, setExpandedGroup] = useState<string | null>(null);
 
   if (!open) return null;
@@ -196,7 +196,7 @@ const MobileMenu = ({ open, onClose, pathname, downloaderLinks }: { open: boolea
           <X className="h-5 w-5" />
         </button>
       </div>
-      <nav className="flex flex-col gap-1 px-6 pt-2">
+      <nav className="flex flex-1 flex-col gap-1 px-6 pt-2">
         <button
           onClick={() => toggleGroup("tools")}
           className="flex items-center justify-between rounded-lg px-4 py-3 text-sm font-semibold text-foreground"
@@ -239,6 +239,43 @@ const MobileMenu = ({ open, onClose, pathname, downloaderLinks }: { open: boolea
             </Link>
           ))}
       </nav>
+
+      {/* Mobile Auth Buttons */}
+      {authEnabled && (
+        <div className="border-t border-border/30 px-6 py-4">
+          {user ? (
+            <div className="space-y-3">
+              <div className="flex items-center gap-3 rounded-lg bg-muted/30 px-4 py-3">
+                <User className="h-4 w-4 text-primary" />
+                <span className="truncate text-sm text-foreground">{user.email}</span>
+              </div>
+              <button
+                onClick={() => { onSignOut(); onClose(); }}
+                className="flex w-full items-center justify-center gap-2 rounded-lg bg-muted/50 px-4 py-3 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+              >
+                <LogOut className="h-4 w-4" /> Sign Out
+              </button>
+            </div>
+          ) : (
+            <div className="flex gap-3">
+              <Link
+                to="/signin"
+                onClick={onClose}
+                className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-muted/50 px-4 py-3 text-sm font-medium text-foreground"
+              >
+                <LogIn className="h-4 w-4" /> Sign In
+              </Link>
+              <Link
+                to="/signup"
+                onClick={onClose}
+                className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground"
+              >
+                <UserPlus className="h-4 w-4" /> Sign Up
+              </Link>
+            </div>
+          )}
+        </div>
+      )}
     </motion.div>,
     document.body
   );
