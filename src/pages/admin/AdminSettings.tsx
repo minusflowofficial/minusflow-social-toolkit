@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Save, AlertTriangle, Globe, Palette, Flag, Plus, Trash2, X, Gauge, Image, Type } from "lucide-react";
+import { Save, AlertTriangle, Globe, Palette, Flag, Plus, Trash2, X, Gauge, Image, Type, LogIn } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useSiteSettings, useUpdateSetting } from "@/hooks/useSiteSettings";
@@ -30,6 +30,9 @@ const AdminSettings = () => {
   // Site status
   const [siteEnabled, setSiteEnabled] = useState(true);
 
+  // User auth
+  const [authEnabled, setAuthEnabled] = useState(false);
+
   // Download limits
   const [ytSingleLimit, setYtSingleLimit] = useState("50");
   const [ytBulkLimit, setYtBulkLimit] = useState("10");
@@ -56,6 +59,7 @@ const AdminSettings = () => {
       setFooterText(br.footer_text ?? "Free tool, for personal use only.");
 
       setSiteEnabled(settings.site_status?.enabled ?? true);
+      setAuthEnabled(settings.user_auth?.enabled ?? false);
 
       const dl = settings.download_limits || {};
       setYtSingleLimit(String(dl.yt_single ?? 50));
@@ -137,6 +141,38 @@ const AdminSettings = () => {
                 <span className={`absolute top-0.5 h-6 w-6 rounded-full bg-white shadow transition-all ${siteEnabled ? "left-5.5" : "left-0.5"}`} />
               </button>
             )}
+          </div>
+        </motion.div>
+
+        {/* User Authentication */}
+        <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }} className="rounded-xl border border-border/50 bg-card p-6">
+          <div className="mb-4 flex items-center gap-3">
+            <LogIn className="h-5 w-5 text-primary" />
+            <h2 className="text-lg font-semibold text-foreground">User Authentication</h2>
+          </div>
+          <div className="space-y-3">
+            <div className="flex items-center justify-between rounded-lg bg-muted/50 p-4">
+              <div>
+                <p className="text-sm font-medium text-foreground">Enable Sign Up / Sign In</p>
+                <p className="text-xs text-muted-foreground">{authEnabled ? "Users can create accounts and sign in" : "Authentication is disabled for public users"}</p>
+              </div>
+              {canEdit && (
+                <button
+                  onClick={async () => {
+                    try {
+                      const newVal = !authEnabled;
+                      await updateSetting.mutateAsync({ key: "user_auth", value: { enabled: newVal } });
+                      setAuthEnabled(newVal);
+                      toast.success(`User authentication ${newVal ? "enabled" : "disabled"}`);
+                    } catch (err: any) { toast.error(err.message); }
+                  }}
+                  className={`relative h-7 w-12 rounded-full transition-colors ${authEnabled ? "bg-green-500" : "bg-muted"}`}
+                >
+                  <span className={`absolute top-0.5 h-6 w-6 rounded-full bg-white shadow transition-all ${authEnabled ? "left-5.5" : "left-0.5"}`} />
+                </button>
+              )}
+            </div>
+            <p className="text-[11px] text-muted-foreground/70">When enabled, Sign In and Sign Up buttons appear in the header. Users can create accounts and access personalized features.</p>
           </div>
         </motion.div>
 
