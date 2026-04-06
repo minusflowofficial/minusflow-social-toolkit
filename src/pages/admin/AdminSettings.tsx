@@ -51,6 +51,9 @@ const AdminSettings = () => {
       setSiteName(br.site_name ?? "MinusFlow ToolKit");
       setLogoUrl(br.logo_url ?? "");
       setLogoMode(br.logo_mode ?? "image");
+      setLogoSize(br.logo_size ?? 36);
+      setFavicon(br.favicon ?? "");
+      setFooterText(br.footer_text ?? "Free tool, for personal use only.");
 
       setSiteEnabled(settings.site_status?.enabled ?? true);
 
