@@ -30,6 +30,9 @@ const AdminSettings = () => {
   // Site status
   const [siteEnabled, setSiteEnabled] = useState(true);
 
+  // User auth
+  const [authEnabled, setAuthEnabled] = useState(false);
+
   // Download limits
   const [ytSingleLimit, setYtSingleLimit] = useState("50");
   const [ytBulkLimit, setYtBulkLimit] = useState("10");
