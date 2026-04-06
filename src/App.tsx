@@ -34,6 +34,8 @@ import TikTokSingleDownloader from "./pages/TikTokSingleDownloader.tsx";
 import TikTokBulkDownloader from "./pages/TikTokBulkDownloader.tsx";
 import InstagramSingleDownloader from "./pages/InstagramSingleDownloader.tsx";
 import InstagramBulkDownloader from "./pages/InstagramBulkDownloader.tsx";
+import SignIn from "./pages/SignIn.tsx";
+import SignUp from "./pages/SignUp.tsx";
 
 const queryClient = new QueryClient();
 
