@@ -133,12 +133,8 @@ const MobileMenu = ({ open, onClose, pathname, downloaderLinks }: { open: boolea
       style={{ backgroundColor: "hsl(0 0% 3%)" }}
     >
       <div className="flex items-center justify-between px-6 py-5">
-        <Link to="/" onClick={onClose} className="flex items-center gap-2.5">
-          <Wrench className="h-7 w-7 text-primary" />
-          <div className="flex flex-col leading-none">
-            <span className="text-xl font-bold tracking-tight text-foreground">MinusFlow</span>
-            <span className="text-[10px] font-semibold tracking-widest uppercase text-primary/70">ToolKit</span>
-          </div>
+        <Link to="/" onClick={onClose} className="flex items-center">
+          <img src={logoImg} alt="MinusFlow ToolKit" className="h-9" />
         </Link>
         <button onClick={onClose} className="flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground hover:text-foreground">
           <X className="h-5 w-5" />
