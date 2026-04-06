@@ -59,7 +59,8 @@ Deno.serve(async (req) => {
     const { action } = body;
 
     if (action === "create") {
-      const { email, password, role } = body;
+      const { password, role } = body;
+      const email = (body.email || "").trim().toLowerCase();
       if (!email || !password || !role) {
         return new Response(JSON.stringify({ error: "Email, password, and role are required" }), {
           status: 400,
