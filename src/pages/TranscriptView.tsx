@@ -3,13 +3,20 @@ import { useParams, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   FileText, Copy, Download, Search, Clock, ExternalLink,
-  RotateCcw, Loader2, CheckCircle2, X, ArrowLeft,
+  RotateCcw, Loader2, CheckCircle2, X, ArrowLeft, Globe,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { toast } from "sonner";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
@@ -29,29 +36,44 @@ const TranscriptView = () => {
   const [showTimestamps, setShowTimestamps] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [copiedLine, setCopiedLine] = useState<number | null>(null);
+  const [selectedLanguage, setSelectedLanguage] = useState<string>("");
 
   useEffect(() => {
     if (videoId) fetchTranscript(videoId);
   }, [videoId]);
 
-  const fetchTranscript = async (id: string) => {
+  const fetchTranscript = async (id: string, language?: string) => {
     setLoading(true);
     setError("");
     setResult(null);
 
     try {
+      const body: any = { videoId: id };
+      if (language) body.language = language;
+
       const { data, error: fnError } = await supabase.functions.invoke("get-transcript", {
-        body: { videoId: id },
+        body,
       });
       if (fnError) throw new Error(fnError.message);
       if (!data?.success) throw new Error(data?.error || "Could not fetch transcript");
       setResult(data);
       saveToHistory(data);
+      if (!language && data.language) {
+        const track = data.availableTracks?.find(
+          (t: any) => t.name === data.language
+        );
+        setSelectedLanguage(track?.languageCode || data.availableTracks?.[0]?.languageCode || "");
+      }
     } catch (err: any) {
       setError(err.message || "Could not fetch transcript. Please try again.");
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleLanguageChange = (langCode: string) => {
+    setSelectedLanguage(langCode);
+    if (videoId) fetchTranscript(videoId, langCode);
   };
 
   const copyAll = () => {
@@ -82,7 +104,6 @@ const TranscriptView = () => {
       <div className="relative z-10">
         <Header />
         <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6">
-          {/* Back button */}
           <Button
             variant="ghost"
             size="sm"
@@ -92,7 +113,6 @@ const TranscriptView = () => {
             <ArrowLeft className="h-4 w-4" /> New Transcript
           </Button>
 
-          {/* Loading */}
           {loading && (
             <div className="flex flex-col gap-5 lg:flex-row">
               <div className="w-full shrink-0 space-y-4 lg:w-72">
@@ -106,7 +126,6 @@ const TranscriptView = () => {
             </div>
           )}
 
-          {/* Error */}
           <AnimatePresence>
             {error && !loading && (
               <motion.div
@@ -128,16 +147,14 @@ const TranscriptView = () => {
             )}
           </AnimatePresence>
 
-          {/* Result */}
           {result && !loading && (
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               className="flex flex-col gap-5 lg:flex-row"
             >
-              {/* LEFT PANEL - Sidebar */}
+              {/* LEFT PANEL */}
               <div className="w-full shrink-0 space-y-4 lg:w-72">
-                {/* Video info */}
                 <div className="rounded-2xl border border-border/60 bg-card/80 p-4 backdrop-blur-md">
                   <a
                     href={`https://www.youtube.com/watch?v=${result.videoId}`}
@@ -176,6 +193,28 @@ const TranscriptView = () => {
                   </div>
                 </div>
 
+                {/* Language selector */}
+                {result.availableTracks.length > 1 && (
+                  <div className="rounded-2xl border border-border/60 bg-card/80 p-3 backdrop-blur-md">
+                    <div className="flex items-center gap-2 mb-2 text-xs text-muted-foreground">
+                      <Globe className="h-3.5 w-3.5" />
+                      <span>Language</span>
+                    </div>
+                    <Select value={selectedLanguage} onValueChange={handleLanguageChange}>
+                      <SelectTrigger className="h-8 text-xs border-border/60 bg-secondary/50">
+                        <SelectValue placeholder="Select language" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {result.availableTracks.map((track) => (
+                          <SelectItem key={track.languageCode} value={track.languageCode}>
+                            {track.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+
                 {/* Actions */}
                 <div className="rounded-2xl border border-border/60 bg-card/80 p-3 backdrop-blur-md space-y-2">
                   <Button size="sm" variant="outline" onClick={copyAll} className="w-full gap-2 justify-start">
@@ -202,9 +241,8 @@ const TranscriptView = () => {
                 </div>
               </div>
 
-              {/* RIGHT PANEL - Transcript */}
+              {/* RIGHT PANEL */}
               <div className="flex-1 space-y-4">
-                {/* Controls */}
                 <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-border/60 bg-card/80 p-3 backdrop-blur-md">
                   <div className="relative flex-1 min-w-[180px]">
                     <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
@@ -236,7 +274,6 @@ const TranscriptView = () => {
                   </p>
                 )}
 
-                {/* Transcript lines */}
                 <div className="rounded-2xl border border-border/60 bg-card/80 backdrop-blur-md">
                   <ScrollArea className="h-[520px] p-4">
                     <div className="space-y-0.5">
@@ -273,7 +310,7 @@ const TranscriptView = () => {
                       })}
                       {result.transcript.length === 0 && (
                         <p className="py-8 text-center text-sm text-muted-foreground">
-                          No transcript lines found. The caption data may be empty.
+                          No transcript lines found for this video.
                         </p>
                       )}
                     </div>

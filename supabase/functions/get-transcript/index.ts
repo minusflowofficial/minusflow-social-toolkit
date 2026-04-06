@@ -4,11 +4,8 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
 };
 
-const HEADERS = {
-  "User-Agent":
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-  "Accept-Language": "en-US,en;q=0.9",
-};
+const UA =
+  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
 
 function extractVideoId(input: string): string | null {
   const trimmed = input.trim();
@@ -20,27 +17,29 @@ function extractVideoId(input: string): string | null {
       const watchId = parsed.searchParams.get("v");
       if (watchId && /^[a-zA-Z0-9_-]{11}$/.test(watchId)) return watchId;
       const pathParts = parsed.pathname.split("/").filter(Boolean);
-      if (["shorts", "embed"].includes(pathParts[0] || "") && pathParts[1] && /^[a-zA-Z0-9_-]{11}$/.test(pathParts[1]))
+      if (
+        ["shorts", "embed"].includes(pathParts[0] || "") &&
+        pathParts[1] &&
+        /^[a-zA-Z0-9_-]{11}$/.test(pathParts[1])
+      )
         return pathParts[1];
     }
     if (hostname === "youtu.be") {
       const candidate = parsed.pathname.split("/").filter(Boolean)[0];
       if (candidate && /^[a-zA-Z0-9_-]{11}$/.test(candidate)) return candidate;
     }
-  } catch { return null; }
+  } catch {
+    return null;
+  }
   return null;
 }
 
-function decodeHtmlEntities(text: string): string {
-  return text
-    .replace(/&amp;/g, "&")
-    .replace(/&lt;/g, "<")
-    .replace(/&gt;/g, ">")
-    .replace(/&quot;/g, '"')
-    .replace(/&#39;/g, "'")
-    .replace(/&apos;/g, "'")
-    .replace(/<[^>]+>/g, "")
-    .trim();
+/** Parse "HH:MM:SS" or "MM:SS" string to seconds */
+function timeToSeconds(t: string): number {
+  const parts = t.split(":").map(Number);
+  if (parts.length === 3) return parts[0] * 3600 + parts[1] * 60 + parts[2];
+  if (parts.length === 2) return parts[0] * 60 + parts[1];
+  return parts[0] || 0;
 }
 
 Deno.serve(async (req: Request) => {
@@ -49,14 +48,14 @@ Deno.serve(async (req: Request) => {
   }
 
   if (req.method !== "POST") {
-    return new Response(JSON.stringify({ error: "Method not allowed" }), {
-      status: 405,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return new Response(
+      JSON.stringify({ error: "Method not allowed" }),
+      { status: 405, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
   }
 
   try {
-    const { videoId: rawVideoId, video_url } = await req.json();
+    const { videoId: rawVideoId, video_url, language } = await req.json();
     const input = rawVideoId || video_url;
 
     if (!input || typeof input !== "string") {
@@ -74,118 +73,101 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    console.log("Fetching transcript for:", videoId);
+    console.log("Fetching transcript via NoteGPT for:", videoId);
 
-    // Step 1: Fetch YouTube page
-    const pageRes = await fetch(`https://www.youtube.com/watch?v=${videoId}`, {
-      headers: HEADERS,
+    // Step 1: Get sbox-guid session cookie
+    const userInfoRes = await fetch("https://notegpt.io/user/v2/userinfo", {
+      headers: { "User-Agent": UA },
     });
-    const html = await pageRes.text();
 
-    // Extract video title
-    const titleMatch = html.match(/<title>([^<]+)<\/title>/);
-    const title = titleMatch
-      ? titleMatch[1].replace(" - YouTube", "").trim()
-      : videoId;
+    if (!userInfoRes.ok) {
+      console.error("Failed to get NoteGPT session:", userInfoRes.status);
+      throw new Error("Session init failed");
+    }
 
-    // Extract author
-    const authorMatch = html.match(/"author":"([^"]+)"/);
-    const author = authorMatch ? authorMatch[1] : "";
+    const setCookie = userInfoRes.headers.get("set-cookie") || "";
+    const sboxMatch = setCookie.match(/sbox-guid=([^;]+)/);
+    const sboxGuid = sboxMatch?.[1] || "";
+    const anonymousUserId = crypto.randomUUID();
 
-    // Extract video duration
-    const durationMatch = html.match(/"lengthSeconds":"(\d+)"/);
-    const duration = durationMatch ? parseInt(durationMatch[1], 10) : 0;
+    console.log("Got sbox-guid:", sboxGuid ? "yes" : "no");
 
-    // Step 2: Extract captionTracks
-    const captionMatch = html.match(/"captionTracks":(\[.*?\])/);
-    if (!captionMatch) {
-      console.log("No captionTracks found in HTML");
+    // Step 2: Fetch transcript from NoteGPT
+    const transcriptUrl = new URL("https://notegpt.io/api/v2/video-transcript");
+    transcriptUrl.searchParams.set("platform", "youtube");
+    transcriptUrl.searchParams.set("video_id", videoId);
+
+    const transcriptRes = await fetch(transcriptUrl.toString(), {
+      headers: {
+        "User-Agent": UA,
+        Cookie: `sbox-guid=${sboxGuid}; anonymous_user_id=${anonymousUserId}`,
+      },
+    });
+
+    if (!transcriptRes.ok) {
+      console.error("NoteGPT API error:", transcriptRes.status);
+      throw new Error("Transcript API returned " + transcriptRes.status);
+    }
+
+    const apiData = await transcriptRes.json();
+    console.log("NoteGPT response code:", apiData.code);
+
+    if (apiData.code !== 100000 || !apiData.data) {
       return new Response(
-        JSON.stringify({ success: false, error: "This video doesn't have captions or subtitles enabled" }),
+        JSON.stringify({
+          success: false,
+          error: apiData.message || "Could not fetch transcript",
+        }),
         { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    let captionTracks: any[];
-    try {
-      captionTracks = JSON.parse(captionMatch[1]);
-    } catch {
-      return new Response(
-        JSON.stringify({ success: false, error: "Could not parse caption data" }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
+    const { videoInfo, language_code, transcripts } = apiData.data;
 
-    if (!captionTracks.length) {
-      return new Response(
-        JSON.stringify({ success: false, error: "This video doesn't have captions or subtitles enabled" }),
-        { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
+    // Build available tracks list
+    const availableTracks = (language_code || []).map((l: any) => ({
+      languageCode: l.code,
+      name: l.name,
+    }));
 
-    console.log("Caption tracks found:", captionTracks.length);
+    // Pick requested language or default
+    const selectedLang =
+      language ||
+      (availableTracks.find((t: any) => t.languageCode === "en")
+        ? "en"
+        : availableTracks[0]?.languageCode || "en");
 
-    // Prefer English, fallback to first available
-    const track =
-      captionTracks.find((t: any) => t.languageCode === "en") ||
-      captionTracks.find((t: any) => t.languageCode?.startsWith("en")) ||
-      captionTracks[0];
+    const langTranscripts = transcripts?.[selectedLang];
+    const rawLines = langTranscripts?.custom || langTranscripts?.auto || [];
 
-    const baseUrl = track.baseUrl.replace(/\\u0026/g, "&");
-    const language = track.name?.simpleText || track.languageCode;
-
-    console.log("Using track:", language, "baseUrl prefix:", baseUrl.substring(0, 80));
-
-    // Step 3: Fetch transcript XML
-    const xmlRes = await fetch(baseUrl, { headers: HEADERS });
-    const xml = await xmlRes.text();
-
-    console.log("XML response length:", xml.length);
-
-    // Step 4: Parse XML
-    const lines: { start: number; duration: number; text: string }[] = [];
-    const regex = /<text start="([^"]+)" dur="([^"]+)"[^>]*>([\s\S]*?)<\/text>/g;
-    let match;
-    while ((match = regex.exec(xml)) !== null) {
-      const text = decodeHtmlEntities(match[3]);
-      if (text) {
-        lines.push({
-          start: parseFloat(match[1]),
-          duration: parseFloat(match[2]),
+    // Parse lines
+    const lines = rawLines
+      .map((seg: any) => {
+        const startSec = timeToSeconds(seg.start || "0:00");
+        const endSec = timeToSeconds(seg.end || seg.start || "0:00");
+        const text = (seg.text || "").trim();
+        if (!text) return null;
+        return {
+          start: startSec,
+          duration: Math.max(0, endSec - startSec),
           text,
-        });
-      }
-    }
+        };
+      })
+      .filter(Boolean);
 
-    // If XML parsing returned nothing, try json3 format as fallback
-    if (lines.length === 0 && xml.length === 0) {
-      console.log("XML empty, trying json3 format...");
-      const json3Url = `${baseUrl}&fmt=json3`;
-      const json3Res = await fetch(json3Url, { headers: HEADERS });
-      const json3Text = await json3Res.text();
-      
-      if (json3Text.length > 0) {
-        try {
-          const json3Data = JSON.parse(json3Text);
-          for (const event of json3Data.events || []) {
-            if (event.segs) {
-              const text = event.segs.map((s: any) => s.utf8 || "").join("").trim();
-              if (text && text !== "\n") {
-                lines.push({
-                  start: event.tStartMs / 1000,
-                  duration: (event.dDurationMs || 0) / 1000,
-                  text,
-                });
-              }
-            }
-          }
-        } catch {
-          console.log("json3 parse failed");
-        }
-      }
-    }
+    console.log("Transcript lines:", lines.length);
 
-    console.log("Transcript lines parsed:", lines.length);
+    const title = videoInfo?.name || videoId;
+    const author = videoInfo?.author || "";
+    const duration = parseInt(videoInfo?.duration || "0", 10);
+    const thumbnail =
+      videoInfo?.thumbnailUrl?.hqdefault ||
+      videoInfo?.thumbnailUrl?.maxresdefault ||
+      `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`;
+
+    const selectedTrack = availableTracks.find(
+      (t: any) => t.languageCode === selectedLang
+    );
 
     return new Response(
       JSON.stringify({
@@ -194,12 +176,9 @@ Deno.serve(async (req: Request) => {
         title,
         author,
         duration,
-        language,
-        thumbnail: `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`,
-        availableTracks: captionTracks.map((t: any) => ({
-          languageCode: t.languageCode,
-          name: t.name?.simpleText || t.languageCode,
-        })),
+        language: selectedTrack?.name || selectedLang,
+        thumbnail,
+        availableTracks,
         transcript: lines,
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -207,7 +186,10 @@ Deno.serve(async (req: Request) => {
   } catch (err) {
     console.error("Unhandled error:", err);
     return new Response(
-      JSON.stringify({ success: false, error: "Could not fetch transcript. Please try again." }),
+      JSON.stringify({
+        success: false,
+        error: "Could not fetch transcript. Please try again.",
+      }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
