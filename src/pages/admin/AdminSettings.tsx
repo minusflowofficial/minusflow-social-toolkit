@@ -25,6 +25,16 @@ const AdminSettings = () => {
   // Site status
   const [siteEnabled, setSiteEnabled] = useState(true);
 
+  // Download limits
+  const [ytSingleLimit, setYtSingleLimit] = useState("50");
+  const [ytBulkLimit, setYtBulkLimit] = useState("10");
+  const [ytPlaylistLimit, setYtPlaylistLimit] = useState("20");
+  const [tiktokSingleLimit, setTiktokSingleLimit] = useState("50");
+  const [tiktokBulkLimit, setTiktokBulkLimit] = useState("20");
+  const [igSingleLimit, setIgSingleLimit] = useState("50");
+  const [igBulkLimit, setIgBulkLimit] = useState("20");
+  const [dailyLimitPerIp, setDailyLimitPerIp] = useState("100");
+
   useEffect(() => {
     if (settings) {
       const mm = settings.maintenance_mode || {};

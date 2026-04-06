@@ -185,25 +185,6 @@ const BulkDownload = () => {
     toast.success(`Started ${startedDownloads} downloads`);
   };
 
-  if (!showBulk) {
-    return (
-      <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.9, duration: 0.4 }}
-        className="mt-4 w-full max-w-xl"
-      >
-        <button
-          onClick={() => setShowBulk(true)}
-          className="glass mx-auto flex items-center gap-2 rounded-full px-5 py-2 text-xs font-medium text-muted-foreground transition-all duration-300 hover:text-foreground hover:shadow-[var(--shadow-glow)]"
-        >
-          <List className="h-3.5 w-3.5" />
-          Bulk Download (up to {MAX_URLS} URLs)
-        </button>
-      </motion.div>
-    );
-  }
-
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
