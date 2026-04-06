@@ -59,6 +59,7 @@ const AdminSettings = () => {
       setFooterText(br.footer_text ?? "Free tool, for personal use only.");
 
       setSiteEnabled(settings.site_status?.enabled ?? true);
+      setAuthEnabled(settings.user_auth?.enabled ?? false);
 
       const dl = settings.download_limits || {};
       setYtSingleLimit(String(dl.yt_single ?? 50));
