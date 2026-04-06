@@ -7,23 +7,27 @@ import ScrollProgress from "@/components/ScrollProgress";
 const sections = [
   {
     title: "Acceptance of Terms",
-    content: "By accessing and using YTFetch (\"the Service\"), you agree to be bound by these Terms and Conditions. If you do not agree with any part of these terms, you must not use the Service.",
+    content: "By accessing and using MinusFlow ToolKit (\"the Service\"), you agree to be bound by these Terms and Conditions. If you do not agree with any part of these terms, you must not use the Service.",
   },
   {
     title: "Description of Service",
-    content: "YTFetch is a free online tool that allows users to fetch downloadable links for YouTube videos. The Service acts as a bridge to third-party APIs and does not host, store, or distribute any copyrighted content.",
+    content: "MinusFlow ToolKit is a free online media toolkit that allows users to download videos, extract transcripts, and grab thumbnails from multiple platforms including YouTube, TikTok, Instagram, and more. The Service acts as a bridge to third-party APIs and does not host, store, or distribute any copyrighted content.",
+  },
+  {
+    title: "Supported Platforms",
+    content: "MinusFlow ToolKit currently supports YouTube, TikTok, and Instagram with additional platforms (Facebook, Douyin) being added regularly. Each platform's content is subject to that platform's own Terms of Service, which users must also comply with.",
   },
   {
     title: "User Responsibilities",
-    content: "You are solely responsible for ensuring that your use of the Service complies with all applicable laws, including copyright laws. You agree not to use YTFetch to download content that you do not have the right to download or distribute.",
+    content: "You are solely responsible for ensuring that your use of the Service complies with all applicable laws, including copyright laws. You agree not to use MinusFlow ToolKit to download content that you do not have the right to download or distribute.",
   },
   {
     title: "Intellectual Property",
-    content: "All content available on YouTube is the property of the respective content owners. YTFetch does not claim ownership of any content downloaded through the Service. Users must respect the intellectual property rights of content creators.",
+    content: "All content available on supported platforms is the property of the respective content owners. MinusFlow ToolKit does not claim ownership of any content downloaded through the Service. Users must respect the intellectual property rights of content creators.",
   },
   {
     title: "Limitation of Liability",
-    content: "YTFetch is provided \"as is\" without any warranties, express or implied. We shall not be liable for any damages arising from the use or inability to use the Service, including but not limited to direct, indirect, incidental, or consequential damages.",
+    content: "MinusFlow ToolKit is provided \"as is\" without any warranties, express or implied. We shall not be liable for any damages arising from the use or inability to use the Service, including but not limited to direct, indirect, incidental, or consequential damages.",
   },
   {
     title: "Prohibited Uses",
@@ -31,7 +35,7 @@ const sections = [
   },
   {
     title: "Service Availability",
-    content: "We do not guarantee that the Service will be available at all times. We reserve the right to modify, suspend, or discontinue the Service at any time without prior notice.",
+    content: "We do not guarantee that the Service will be available at all times. We reserve the right to modify, suspend, or discontinue the Service or any of its tools at any time without prior notice.",
   },
   {
     title: "Changes to Terms",
@@ -57,7 +61,7 @@ const Terms = () => (
           transition={{ duration: 0.5 }}
           className="mb-4 text-center text-4xl font-bold text-foreground"
         >
-          Terms & Conditions
+          Terms & <span className="text-primary">Conditions</span>
         </motion.h1>
         <motion.p
           initial={{ opacity: 0, y: 20 }}

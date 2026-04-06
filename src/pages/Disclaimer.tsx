@@ -8,31 +8,31 @@ import ScrollProgress from "@/components/ScrollProgress";
 const sections = [
   {
     title: "General Disclaimer",
-    content: "The information and services provided by YTFetch are for general informational and personal use purposes only. While we strive to keep the Service functional and up-to-date, we make no representations or warranties of any kind, express or implied, about the completeness, accuracy, reliability, or availability of the Service.",
+    content: "The information and services provided by MinusFlow ToolKit are for general informational and personal use purposes only. While we strive to keep the Service functional and up-to-date across all supported platforms (YouTube, TikTok, Instagram, and more), we make no representations or warranties of any kind, express or implied, about the completeness, accuracy, reliability, or availability of the Service.",
   },
   {
     title: "No Endorsement",
-    content: "YTFetch does not endorse, promote, or encourage the downloading of copyrighted content without permission. Users are solely responsible for ensuring they have the legal right to download any content accessed through the Service.",
+    content: "MinusFlow ToolKit does not endorse, promote, or encourage the downloading of copyrighted content without permission from any platform. Users are solely responsible for ensuring they have the legal right to download any content accessed through the Service.",
   },
   {
-    title: "Third-Party Content",
-    content: "All videos and content accessible through YTFetch are hosted on third-party platforms (such as YouTube) and are the intellectual property of their respective owners. YTFetch has no control over and assumes no responsibility for the content, privacy policies, or practices of any third-party sites or services.",
+    title: "Third-Party Content & Platforms",
+    content: "All videos and content accessible through MinusFlow ToolKit are hosted on third-party platforms (YouTube, TikTok, Instagram, Facebook, Douyin, etc.) and are the intellectual property of their respective owners. MinusFlow ToolKit has no control over and assumes no responsibility for the content, privacy policies, or practices of any third-party sites or services.",
   },
   {
     title: "Use at Your Own Risk",
-    content: "Any reliance you place on the Service is strictly at your own risk. We shall not be liable for any loss or damage, including without limitation, indirect or consequential loss or damage arising from the use of the Service.",
+    content: "Any reliance you place on the Service is strictly at your own risk. We shall not be liable for any loss or damage, including without limitation, indirect or consequential loss or damage arising from the use of the Service across any supported platform.",
   },
   {
     title: "Service Interruptions",
-    content: "YTFetch may experience downtime, errors, or interruptions. We do not guarantee uninterrupted access to the Service and are not liable for any inconvenience caused by temporary unavailability.",
+    content: "MinusFlow ToolKit may experience downtime, errors, or interruptions — especially when third-party platforms change their APIs or policies. We do not guarantee uninterrupted access to the Service and are not liable for any inconvenience caused by temporary unavailability of any tool.",
   },
   {
     title: "External Links",
-    content: "The Service may contain links to external websites that are not provided or maintained by YTFetch. We do not guarantee the accuracy, relevance, timeliness, or completeness of any information on these external websites.",
+    content: "The Service may contain links to external websites that are not provided or maintained by MinusFlow ToolKit. We do not guarantee the accuracy, relevance, timeliness, or completeness of any information on these external websites.",
   },
   {
     title: "Fair Use",
-    content: "YTFetch is intended to be used in accordance with fair use principles. Users should only download content for personal, non-commercial, educational, or research purposes where permitted by applicable law.",
+    content: "MinusFlow ToolKit is intended to be used in accordance with fair use principles. Users should only download content for personal, non-commercial, educational, or research purposes where permitted by applicable law.",
   },
 ];
 
