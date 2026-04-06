@@ -122,10 +122,43 @@ const Header = () => {
       </Link>
 
       {/* Desktop Nav */}
-      <nav className="hidden items-center gap-1 md:flex">
-        <DropdownMenu label="Tools" links={downloaderLinks} pathname={location.pathname} />
-        <DropdownMenu label="Pages" links={pageLinks} pathname={location.pathname} />
-      </nav>
+      <div className="hidden items-center gap-1 md:flex">
+        <nav className="flex items-center gap-1">
+          <DropdownMenu label="Tools" links={downloaderLinks} pathname={location.pathname} />
+          <DropdownMenu label="Pages" links={pageLinks} pathname={location.pathname} />
+        </nav>
+
+        {authEnabled && (
+          <div className="ml-4 flex items-center gap-2 border-l border-border/30 pl-4">
+            {user ? (
+              <>
+                <span className="text-xs text-muted-foreground truncate max-w-[140px]">{user.email}</span>
+                <button
+                  onClick={handleSignOut}
+                  className="flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                >
+                  <LogOut className="h-3.5 w-3.5" /> Sign Out
+                </button>
+              </>
+            ) : (
+              <>
+                <Link
+                  to="/signin"
+                  className="flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
+                >
+                  <LogIn className="h-3.5 w-3.5" /> Sign In
+                </Link>
+                <Link
+                  to="/signup"
+                  className="flex items-center gap-1.5 rounded-lg bg-primary px-3.5 py-2 text-xs font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
+                >
+                  <UserPlus className="h-3.5 w-3.5" /> Sign Up
+                </Link>
+              </>
+            )}
+          </div>
+        )}
+      </div>
 
       {/* Mobile toggle */}
       <button
@@ -135,7 +168,7 @@ const Header = () => {
         {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
       </button>
 
-      <MobileMenu open={mobileOpen} onClose={() => setMobileOpen(false)} pathname={location.pathname} downloaderLinks={downloaderLinks} />
+      <MobileMenu open={mobileOpen} onClose={() => setMobileOpen(false)} pathname={location.pathname} downloaderLinks={downloaderLinks} authEnabled={authEnabled} user={user} onSignOut={handleSignOut} />
     </motion.header>
   );
 };
