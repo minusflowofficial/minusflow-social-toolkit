@@ -54,9 +54,13 @@ const iconColors = [
 ];
 
 const fallbackTools = [
-  { name: "YouTube Downloader", route: "/", icon: "Youtube", description: "Download videos in MP4, MP3 & more", slug: "yt" },
-  { name: "TikTok Downloader", route: "/tiktok", icon: "Music", description: "Save TikTok videos without watermark", slug: "tt" },
-  { name: "Instagram Downloader", route: "/instagram", icon: "Instagram", description: "Download reels, stories & posts", slug: "ig" },
+  { name: "YouTube Downloader", route: "/youtube-downloader", icon: "Youtube", description: "Download videos in MP4, MP3 & more", slug: "yt-single" },
+  { name: "YouTube Bulk Downloader", route: "/youtube-bulk-downloader", icon: "List", description: "Download up to 10 YouTube videos at once", slug: "yt-bulk" },
+  { name: "YouTube Playlist Downloader", route: "/youtube-playlist-downloader", icon: "ListVideo", description: "Download entire YouTube playlists", slug: "yt-playlist" },
+  { name: "TikTok Downloader", route: "/tiktok-downloader", icon: "Music", description: "Save TikTok videos without watermark", slug: "tt-single" },
+  { name: "TikTok Bulk Downloader", route: "/tiktok-bulk-downloader", icon: "DownloadCloud", description: "Download up to 20 TikTok videos at once", slug: "tt-bulk" },
+  { name: "Instagram Downloader", route: "/instagram-downloader", icon: "Instagram", description: "Download reels, videos & posts in HD", slug: "ig-single" },
+  { name: "Instagram Bulk Downloader", route: "/instagram-bulk-downloader", icon: "DownloadCloud", description: "Download up to 20 Instagram reels at once", slug: "ig-bulk" },
   { name: "Transcript Generator", route: "/transcript", icon: "FileText", description: "Extract YouTube video transcripts", slug: "tr" },
   { name: "Thumbnail Downloader", route: "/thumbnail", icon: "Image", description: "Get HD thumbnails from any video", slug: "th" },
 ];
