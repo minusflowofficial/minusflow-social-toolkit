@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
 import { ReactNode } from "react";
-import { LucideIcon, CheckCircle, ArrowDown, Sparkles, Star, Shield, Globe } from "lucide-react";
+import { LucideIcon, CheckCircle, Sparkles, Star, Shield, Globe } from "lucide-react";
 import {
   Accordion,
   AccordionContent,
@@ -144,20 +144,6 @@ const ToolPageLayout = ({
             {subtitle}
           </motion.p>
 
-          {/* Scroll indicator */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.8, duration: 0.5 }}
-            className="mt-2"
-          >
-            <motion.div
-              animate={{ y: [0, 8, 0] }}
-              transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
-            >
-              <ArrowDown className="h-5 w-5 text-muted-foreground/50" />
-            </motion.div>
-          </motion.div>
         </section>
 
         {/* ═══ TOOL WIDGET — EXPANDED GLOWING CARD ═══ */}

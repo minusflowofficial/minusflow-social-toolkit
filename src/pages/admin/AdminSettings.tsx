@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Save, AlertTriangle, Globe, Palette, Flag, Plus, Trash2, X } from "lucide-react";
+import { Save, AlertTriangle, Globe, Palette, Flag, Plus, Trash2, X, Gauge } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useSiteSettings, useUpdateSetting } from "@/hooks/useSiteSettings";
@@ -25,6 +25,16 @@ const AdminSettings = () => {
   // Site status
   const [siteEnabled, setSiteEnabled] = useState(true);
 
+  // Download limits
+  const [ytSingleLimit, setYtSingleLimit] = useState("50");
+  const [ytBulkLimit, setYtBulkLimit] = useState("10");
+  const [ytPlaylistLimit, setYtPlaylistLimit] = useState("20");
+  const [tiktokSingleLimit, setTiktokSingleLimit] = useState("50");
+  const [tiktokBulkLimit, setTiktokBulkLimit] = useState("20");
+  const [igSingleLimit, setIgSingleLimit] = useState("50");
+  const [igBulkLimit, setIgBulkLimit] = useState("20");
+  const [dailyLimitPerIp, setDailyLimitPerIp] = useState("100");
+
   useEffect(() => {
     if (settings) {
       const mm = settings.maintenance_mode || {};
@@ -36,6 +46,16 @@ const AdminSettings = () => {
       setSiteName(br.site_name ?? "YTFetch");
 
       setSiteEnabled(settings.site_status?.enabled ?? true);
+
+      const dl = settings.download_limits || {};
+      setYtSingleLimit(String(dl.yt_single ?? 50));
+      setYtBulkLimit(String(dl.yt_bulk ?? 10));
+      setYtPlaylistLimit(String(dl.yt_playlist ?? 20));
+      setTiktokSingleLimit(String(dl.tiktok_single ?? 50));
+      setTiktokBulkLimit(String(dl.tiktok_bulk ?? 20));
+      setIgSingleLimit(String(dl.ig_single ?? 50));
+      setIgBulkLimit(String(dl.ig_bulk ?? 20));
+      setDailyLimitPerIp(String(dl.daily_per_ip ?? 100));
     }
   }, [settings]);
 
@@ -178,6 +198,69 @@ const AdminSettings = () => {
             {canEdit && (
               <Button onClick={saveBranding} disabled={updateSetting.isPending} className="gap-2">
                 <Save className="h-4 w-4" /> Save Branding
+              </Button>
+            )}
+          </div>
+        </motion.div>
+
+        {/* Download Limits */}
+        <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }} className="rounded-xl border border-border/50 bg-card p-6">
+          <div className="mb-4 flex items-center gap-3">
+            <Gauge className="h-5 w-5 text-primary" />
+            <h2 className="text-lg font-semibold text-foreground">Download Limits</h2>
+          </div>
+          <p className="mb-4 text-xs text-muted-foreground">Control maximum downloads per tool and daily limits per IP address.</p>
+          <div className="space-y-4">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              {[
+                { label: "YT Single (per session)", value: ytSingleLimit, set: setYtSingleLimit },
+                { label: "YT Bulk (max URLs)", value: ytBulkLimit, set: setYtBulkLimit },
+                { label: "YT Playlist (max videos)", value: ytPlaylistLimit, set: setYtPlaylistLimit },
+                { label: "TikTok Single (per session)", value: tiktokSingleLimit, set: setTiktokSingleLimit },
+                { label: "TikTok Bulk (max URLs)", value: tiktokBulkLimit, set: setTiktokBulkLimit },
+                { label: "IG Single (per session)", value: igSingleLimit, set: setIgSingleLimit },
+                { label: "IG Bulk (max URLs)", value: igBulkLimit, set: setIgBulkLimit },
+                { label: "Daily Limit per IP", value: dailyLimitPerIp, set: setDailyLimitPerIp },
+              ].map((item) => (
+                <div key={item.label} className="rounded-lg bg-muted/30 p-3">
+                  <label className="mb-1.5 block text-[11px] font-medium text-muted-foreground">{item.label}</label>
+                  <Input
+                    type="number"
+                    value={item.value}
+                    onChange={(e) => item.set(e.target.value)}
+                    disabled={!canEdit}
+                    className="h-9 bg-muted/50 text-sm"
+                    min="1"
+                  />
+                </div>
+              ))}
+            </div>
+            {canEdit && (
+              <Button
+                onClick={async () => {
+                  try {
+                    await updateSetting.mutateAsync({
+                      key: "download_limits",
+                      value: {
+                        yt_single: Number(ytSingleLimit),
+                        yt_bulk: Number(ytBulkLimit),
+                        yt_playlist: Number(ytPlaylistLimit),
+                        tiktok_single: Number(tiktokSingleLimit),
+                        tiktok_bulk: Number(tiktokBulkLimit),
+                        ig_single: Number(igSingleLimit),
+                        ig_bulk: Number(igBulkLimit),
+                        daily_per_ip: Number(dailyLimitPerIp),
+                      },
+                    });
+                    toast.success("Download limits saved");
+                  } catch (err: any) {
+                    toast.error(err.message);
+                  }
+                }}
+                disabled={updateSetting.isPending}
+                className="gap-2"
+              >
+                <Save className="h-4 w-4" /> Save Download Limits
               </Button>
             )}
           </div>
