@@ -203,6 +203,69 @@ const AdminSettings = () => {
           </div>
         </motion.div>
 
+        {/* Download Limits */}
+        <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }} className="rounded-xl border border-border/50 bg-card p-6">
+          <div className="mb-4 flex items-center gap-3">
+            <Gauge className="h-5 w-5 text-primary" />
+            <h2 className="text-lg font-semibold text-foreground">Download Limits</h2>
+          </div>
+          <p className="mb-4 text-xs text-muted-foreground">Control maximum downloads per tool and daily limits per IP address.</p>
+          <div className="space-y-4">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              {[
+                { label: "YT Single (per session)", value: ytSingleLimit, set: setYtSingleLimit },
+                { label: "YT Bulk (max URLs)", value: ytBulkLimit, set: setYtBulkLimit },
+                { label: "YT Playlist (max videos)", value: ytPlaylistLimit, set: setYtPlaylistLimit },
+                { label: "TikTok Single (per session)", value: tiktokSingleLimit, set: setTiktokSingleLimit },
+                { label: "TikTok Bulk (max URLs)", value: tiktokBulkLimit, set: setTiktokBulkLimit },
+                { label: "IG Single (per session)", value: igSingleLimit, set: setIgSingleLimit },
+                { label: "IG Bulk (max URLs)", value: igBulkLimit, set: setIgBulkLimit },
+                { label: "Daily Limit per IP", value: dailyLimitPerIp, set: setDailyLimitPerIp },
+              ].map((item) => (
+                <div key={item.label} className="rounded-lg bg-muted/30 p-3">
+                  <label className="mb-1.5 block text-[11px] font-medium text-muted-foreground">{item.label}</label>
+                  <Input
+                    type="number"
+                    value={item.value}
+                    onChange={(e) => item.set(e.target.value)}
+                    disabled={!canEdit}
+                    className="h-9 bg-muted/50 text-sm"
+                    min="1"
+                  />
+                </div>
+              ))}
+            </div>
+            {canEdit && (
+              <Button
+                onClick={async () => {
+                  try {
+                    await updateSetting.mutateAsync({
+                      key: "download_limits",
+                      value: {
+                        yt_single: Number(ytSingleLimit),
+                        yt_bulk: Number(ytBulkLimit),
+                        yt_playlist: Number(ytPlaylistLimit),
+                        tiktok_single: Number(tiktokSingleLimit),
+                        tiktok_bulk: Number(tiktokBulkLimit),
+                        ig_single: Number(igSingleLimit),
+                        ig_bulk: Number(igBulkLimit),
+                        daily_per_ip: Number(dailyLimitPerIp),
+                      },
+                    });
+                    toast.success("Download limits saved");
+                  } catch (err: any) {
+                    toast.error(err.message);
+                  }
+                }}
+                disabled={updateSetting.isPending}
+                className="gap-2"
+              >
+                <Save className="h-4 w-4" /> Save Download Limits
+              </Button>
+            )}
+          </div>
+        </motion.div>
+
         {/* Feature Flags */}
         <FeatureFlagsSection canEdit={canEdit} />
       </div>
