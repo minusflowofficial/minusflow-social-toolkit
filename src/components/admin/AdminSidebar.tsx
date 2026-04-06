@@ -3,6 +3,7 @@ import { LayoutDashboard, Wrench, Settings, LogOut, ChevronLeft, ChevronRight, U
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
+import { useSiteSettings } from "@/hooks/useSiteSettings";
 
 const navItems = [
   { to: "/admin", icon: LayoutDashboard, label: "Dashboard", exact: true },
