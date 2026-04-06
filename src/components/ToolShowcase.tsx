@@ -8,6 +8,9 @@ import {
   Image,
   Download,
   ArrowRight,
+  List,
+  ListVideo,
+  DownloadCloud,
 } from "lucide-react";
 import { usePublicTools } from "@/hooks/useTools";
 
@@ -18,6 +21,9 @@ const iconMap: Record<string, React.ElementType> = {
   FileText,
   Image,
   Download,
+  List,
+  ListVideo,
+  DownloadCloud,
 };
 
 const gradients = [
