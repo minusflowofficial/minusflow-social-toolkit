@@ -1,5 +1,6 @@
 import { motion } from "framer-motion";
-import { Wrench, Menu, X, ChevronDown } from "lucide-react";
+import { Menu, X, ChevronDown } from "lucide-react";
+import logoImg from "@/assets/logo-red.png";
 import { Link, useLocation } from "react-router-dom";
 import { useState, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
