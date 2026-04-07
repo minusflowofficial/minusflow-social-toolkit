@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Save, AlertTriangle, Globe, Palette, Flag, Plus, Trash2, X, Gauge, Image, Type, LogIn } from "lucide-react";
+import { Save, AlertTriangle, Globe, Palette, Flag, Plus, Trash2, X, Gauge, Image, Type, LogIn, Link2, BarChart3, DollarSign, Search, Shield, Zap, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useSiteSettings, useUpdateSetting } from "@/hooks/useSiteSettings";
@@ -408,6 +408,9 @@ const AdminSettings = () => {
             )}
           </div>
         </motion.div>
+
+        {/* Integrations */}
+        <IntegrationsSection canEdit={canEdit} settings={settings} updateSetting={updateSetting} />
 
         {/* Feature Flags */}
         <FeatureFlagsSection canEdit={canEdit} />
