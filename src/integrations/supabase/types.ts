@@ -81,6 +81,8 @@ export type Database = {
           email: string | null
           full_name: string | null
           id: string
+          is_suspended: boolean
+          suspended_reason: string | null
           updated_at: string
         }
         Insert: {
@@ -89,6 +91,8 @@ export type Database = {
           email?: string | null
           full_name?: string | null
           id: string
+          is_suspended?: boolean
+          suspended_reason?: string | null
           updated_at?: string
         }
         Update: {
@@ -97,6 +101,8 @@ export type Database = {
           email?: string | null
           full_name?: string | null
           id?: string
+          is_suspended?: boolean
+          suspended_reason?: string | null
           updated_at?: string
         }
         Relationships: []
@@ -226,6 +232,39 @@ export type Database = {
           created_at?: string
           id?: string
           role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_sessions: {
+        Row: {
+          created_at: string
+          device_info: string | null
+          id: string
+          ip_address: string | null
+          is_active: boolean
+          last_active_at: string
+          session_token: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          device_info?: string | null
+          id?: string
+          ip_address?: string | null
+          is_active?: boolean
+          last_active_at?: string
+          session_token: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          device_info?: string | null
+          id?: string
+          ip_address?: string | null
+          is_active?: boolean
+          last_active_at?: string
+          session_token?: string
           user_id?: string
         }
         Relationships: []
