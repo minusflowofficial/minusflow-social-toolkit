@@ -45,6 +45,73 @@ const StatCard = ({ icon: Icon, label, value, color }: { icon: any; label: strin
   </motion.div>
 );
 
+const statusOptions = [
+  { value: "active", label: "Active", icon: CircleCheck, color: "text-green-500", bg: "bg-green-500/10" },
+  { value: "suspended", label: "Suspended", icon: Ban, color: "text-destructive", bg: "bg-destructive/10" },
+  { value: "spammer", label: "Spammer", icon: Bug, color: "text-orange-500", bg: "bg-orange-500/10" },
+] as const;
+
+const UserStatusDropdown = ({
+  currentStatus,
+  onStatusChange,
+}: {
+  currentStatus: string;
+  onStatusChange: (status: string) => void;
+}) => {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  const current = statusOptions.find((s) => s.value === currentStatus) || statusOptions[0];
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        onClick={() => setOpen(!open)}
+        className={`flex h-8 items-center gap-1.5 rounded-lg border border-border/50 px-3 text-xs font-medium transition-colors hover:bg-muted/50 ${current.color}`}
+      >
+        <current.icon className="h-3.5 w-3.5" />
+        {current.label}
+        <ChevronDown className={`h-3 w-3 transition-transform ${open ? "rotate-180" : ""}`} />
+      </button>
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            initial={{ opacity: 0, y: -4, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -4, scale: 0.95 }}
+            transition={{ duration: 0.15 }}
+            className="absolute right-0 top-full z-50 mt-1 w-40 overflow-hidden rounded-lg border border-border/50 bg-card shadow-xl"
+          >
+            {statusOptions.map((opt) => (
+              <button
+                key={opt.value}
+                onClick={() => {
+                  if (opt.value !== currentStatus) onStatusChange(opt.value);
+                  setOpen(false);
+                }}
+                className={`flex w-full items-center gap-2 px-3 py-2 text-xs font-medium transition-colors hover:bg-muted/50 ${
+                  opt.value === currentStatus ? `${opt.bg} ${opt.color}` : "text-muted-foreground"
+                }`}
+              >
+                <opt.icon className="h-3.5 w-3.5" />
+                {opt.label}
+                {opt.value === currentStatus && <CheckCircle className="ml-auto h-3 w-3" />}
+              </button>
+            ))}
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+};
+
 const AdminDashboard = () => {
   const { data: tools } = useTools();
   const { data: settings } = useSiteSettings();
