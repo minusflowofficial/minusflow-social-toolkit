@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
 const SESSION_KEY = "mf_session_token";
-const MAX_SESSIONS = 3;
+const DEFAULT_MAX_SESSIONS = 3;
 const HEARTBEAT_MS = 60_000; // 1 minute for faster detection
 
 function getSessionToken(): string {
@@ -18,7 +18,21 @@ export function useSessionTracker() {
   const [blocked, setBlocked] = useState(false);
   const [checking, setChecking] = useState(true);
 
+  const checkIsAdmin = useCallback(async (userId: string): Promise<boolean> => {
+    const { data } = await supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", userId)
+      .in("role", ["super_admin", "admin"])
+      .maybeSingle();
+    return !!data;
+  }, []);
+
   const checkSuspension = useCallback(async (userId: string) => {
+    // Admins/Super Admins are never blocked
+    const admin = await checkIsAdmin(userId);
+    if (admin) return false;
+
     const { data: profile } = await supabase
       .from("profiles")
       .select("is_suspended")
@@ -30,9 +44,16 @@ export function useSessionTracker() {
       return true;
     }
     return false;
-  }, []);
+  }, [checkIsAdmin]);
 
   const checkAndRegister = useCallback(async (userId: string) => {
+    // Admins/Super Admins skip all restrictions
+    const admin = await checkIsAdmin(userId);
+    if (admin) {
+      setChecking(false);
+      return;
+    }
+
     // Check suspension first
     if (await checkSuspension(userId)) {
       setChecking(false);
@@ -78,6 +99,14 @@ export function useSessionTracker() {
       }
     }
 
+    // Get user's max_devices setting
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("max_devices")
+      .eq("id", userId)
+      .maybeSingle();
+    const maxDevices = (profile as any)?.max_devices ?? DEFAULT_MAX_SESSIONS;
+
     // Count active sessions
     const { count } = await supabase
       .from("user_sessions")
@@ -85,19 +114,19 @@ export function useSessionTracker() {
       .eq("user_id", userId)
       .eq("is_active", true);
 
-    if (count && count > MAX_SESSIONS) {
+    if (count && count > maxDevices) {
       setBlocked(true);
       await supabase
         .from("profiles")
         .update({
           is_suspended: true,
-          suspended_reason: `Too many active sessions (${count}). Account automatically suspended.`,
+          suspended_reason: `Too many active sessions (${count}/${maxDevices}). Account automatically suspended.`,
         })
         .eq("id", userId);
     }
 
     setChecking(false);
-  }, [checkSuspension]);
+  }, [checkSuspension, checkIsAdmin]);
 
   useEffect(() => {
     let cleanup = false;

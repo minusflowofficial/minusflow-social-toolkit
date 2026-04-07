@@ -35,7 +35,6 @@ Deno.serve(async (req) => {
     const { data: { user: callingUser }, error: authError } = await supabaseUser.auth.getUser();
     if (authError || !callingUser) return jsonResp({ error: "Unauthorized" }, 401);
 
-    // Check if calling user is admin or super_admin
     const { data: callerRole } = await supabaseAdmin
       .from("user_roles")
       .select("role")
@@ -49,25 +48,22 @@ Deno.serve(async (req) => {
     const body = await req.json();
     const { action } = body;
 
-    // ─── LIST ALL USERS (admins + super_admins can view) ───
+    // ─── LIST ALL USERS ───
     if (action === "list_all") {
       if (!isAdmin) return jsonResp({ error: "Only admins can view users" }, 403);
 
-      // Get all auth users (paginated, up to 1000)
       const { data: { users: authUsers }, error: listErr } = await supabaseAdmin.auth.admin.listUsers({ perPage: 1000 });
       if (listErr) return jsonResp({ error: listErr.message }, 400);
 
-      // Get all profiles
+      // Get ALL profile fields
       const { data: profiles } = await supabaseAdmin
         .from("profiles")
-        .select("id, full_name, is_suspended, suspended_reason");
+        .select("*");
 
-      // Get all roles
       const { data: roles } = await supabaseAdmin
         .from("user_roles")
         .select("user_id, role");
 
-      // Get active session counts
       const { data: sessions } = await supabaseAdmin
         .from("user_sessions")
         .select("user_id, is_active");
@@ -75,7 +71,6 @@ Deno.serve(async (req) => {
       const profileMap = new Map((profiles || []).map(p => [p.id, p]));
       const roleMap = new Map((roles || []).map(r => [r.user_id, r.role]));
 
-      // Count active sessions per user
       const sessionCounts = new Map<string, number>();
       for (const s of sessions || []) {
         if (s.is_active) {
@@ -89,6 +84,8 @@ Deno.serve(async (req) => {
           id: u.id,
           email: u.email,
           full_name: profile?.full_name || "",
+          avatar_url: profile?.avatar_url || "",
+          banner_url: profile?.banner_url || "",
           role: roleMap.get(u.id) || "user",
           is_suspended: profile?.is_suspended || false,
           suspended_reason: profile?.suspended_reason || "",
@@ -107,8 +104,6 @@ Deno.serve(async (req) => {
       if (!isAdmin) return jsonResp({ error: "Only admins can suspend users" }, 403);
       const { user_id, reason } = body;
       if (!user_id) return jsonResp({ error: "user_id required" }, 400);
-
-      // Don't allow suspending self
       if (user_id === callingUser.id) return jsonResp({ error: "Cannot suspend yourself" }, 400);
 
       const { error } = await supabaseAdmin
@@ -129,13 +124,11 @@ Deno.serve(async (req) => {
       const { user_id } = body;
       if (!user_id) return jsonResp({ error: "user_id required" }, 400);
 
-      // Clear suspension
       await supabaseAdmin
         .from("profiles")
         .update({ is_suspended: false, suspended_reason: "" })
         .eq("id", user_id);
 
-      // Clear all sessions for the user
       await supabaseAdmin
         .from("user_sessions")
         .update({ is_active: false })
@@ -174,7 +167,6 @@ Deno.serve(async (req) => {
       });
       if (createError) return jsonResp({ error: createError.message }, 400);
 
-      // Assign role
       const { error: roleError } = await supabaseAdmin
         .from("user_roles")
         .insert({ user_id: newUser.user.id, role });
@@ -221,7 +213,6 @@ Deno.serve(async (req) => {
       const { user_id, role } = body;
       if (!user_id || !role) return jsonResp({ error: "user_id and role required" }, 400);
 
-      // Upsert role
       const { data: existing } = await supabaseAdmin
         .from("user_roles")
         .select("id")

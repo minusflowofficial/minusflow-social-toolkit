@@ -335,7 +335,7 @@ const Profile = () => {
 
                 <div className="mt-1.5 flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
                   <span className="flex items-center gap-1"><Mail className="h-3 w-3" /> {userEmail}</span>
-                  <span className="flex items-center gap-1"><Calendar className="h-3 w-3" /> Joined {new Date(profile?.created_at || "").toLocaleDateString()}</span>
+                  <span className="flex items-center gap-1"><Calendar className="h-3 w-3" /> Joined {profile?.created_at ? new Date(profile.created_at).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" }) : "N/A"}</span>
                   {(profile as any)?.location && <span className="flex items-center gap-1"><MapPin className="h-3 w-3" /> {(profile as any).location}</span>}
                   <span className="flex items-center gap-1">
                     <Shield className="h-3 w-3 text-green-500" /> {profile?.is_suspended ? "Suspended" : "Active"}
