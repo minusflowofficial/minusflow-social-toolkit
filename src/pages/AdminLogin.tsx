@@ -49,7 +49,7 @@ const AdminLogin = () => {
           <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10">
             <Youtube className="h-7 w-7 text-primary" />
           </div>
-          <h1 className="text-2xl font-bold text-foreground">YTFetch Admin</h1>
+          <h1 className="text-2xl font-bold text-foreground">MinusFlow Admin</h1>
           <p className="text-sm text-muted-foreground">
             {isSignUp ? "Create your admin account" : "Sign in to the admin panel"}
           </p>
@@ -60,7 +60,7 @@ const AdminLogin = () => {
             <label className="mb-1.5 block text-xs font-medium text-muted-foreground">Email</label>
             <Input
               type="email"
-              placeholder="admin@ytfetch.com"
+              placeholder="admin@minusflow.net"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="h-11 border-border/50 bg-card"

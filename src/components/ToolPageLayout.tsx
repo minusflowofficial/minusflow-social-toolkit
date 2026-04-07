@@ -212,7 +212,7 @@ const ToolPageLayout = ({
             <h2 className="mb-3 text-2xl font-bold text-foreground md:text-4xl">
               Why Choose{" "}
               <span className={`bg-gradient-to-r ${gradientFrom} ${gradientTo} bg-clip-text text-transparent`}>
-                YTFetch
+                MinusFlow ToolKit
               </span>
               ?
             </h2>

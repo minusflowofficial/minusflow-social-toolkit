@@ -28,14 +28,14 @@ const features = [
 
 const steps = [
   { title: "Collect Instagram URLs", desc: "Open Instagram, go to each reel/video you want, tap ⋯ → Copy Link. Collect all URLs." },
-  { title: "Paste All URLs", desc: "Come to YTFetch and paste all Instagram URLs in the text area — one URL per line, up to 20." },
+  { title: "Paste All URLs", desc: "Come to MinusFlow ToolKit and paste all Instagram URLs in the text area — one URL per line, up to 20." },
   { title: "Click Process All", desc: "Hit the 'Process All URLs' button. Each reel is fetched and processed one by one." },
   { title: "Download Each File", desc: "As each reel is processed, click 'Download Best' to save the highest quality version." },
 ];
 
 const faqs = [
   { q: "How many Instagram Reels can I bulk download?", a: "You can process up to 20 Instagram Reels or video posts in a single batch. For more than 20, simply run another batch after the first completes. There are no daily limits on how many batches you can run." },
-  { q: "Do I need to be logged into Instagram?", a: "No! YTFetch Instagram Bulk Downloader works without any Instagram login. All you need are the URLs of public Instagram content. Private account content is not accessible." },
+  { q: "Do I need to be logged into Instagram?", a: "No! MinusFlow ToolKit Instagram Bulk Downloader works without any Instagram login. All you need are the URLs of public Instagram content. Private account content is not accessible." },
   { q: "What happens if some reels fail?", a: "Failed reels are clearly marked with an error message, but processing continues for the remaining URLs. Common failure reasons include private accounts, deleted content, or incorrect URLs." },
   { q: "What quality are the bulk downloads?", a: "Each reel is downloaded in the highest available quality, typically 1080p HD. The quality depends on what the original creator uploaded to Instagram." },
   { q: "Can I download carousel posts with multiple videos?", a: "Our tool downloads the primary video from a post. For carousel posts with multiple videos, you may need to download each video slide individually using its direct URL." },
@@ -45,7 +45,7 @@ const faqs = [
 ];
 
 const seoBlocks = [
-  { title: "Bulk Download Instagram Reels & Videos — Free Tool", content: "YTFetch Instagram Bulk Downloader lets you save multiple Instagram Reels and videos in one session. Paste up to 20 URLs, click Process, and each video is downloaded in HD quality automatically. No Instagram login required." },
+  { title: "Bulk Download Instagram Reels & Videos — Free Tool", content: "MinusFlow ToolKit Instagram Bulk Downloader lets you save multiple Instagram Reels and videos in one session. Paste up to 20 URLs, click Process, and each video is downloaded in HD quality automatically. No Instagram login required." },
   { title: "Save Entire Collections for Offline Viewing", content: "Build your personal content library by bulk downloading your favorite creators' Reels. Watch offline, save mobile data, and never worry about content being deleted. All files include descriptive filenames for easy organization." },
   { title: "Reliable Batch Processing with Progress Tracking", content: "Watch real-time progress as each reel is processed. Clear success/failure indicators let you know exactly which videos were downloaded and which need attention. Smart delays between processing ensure maximum reliability." },
 ];

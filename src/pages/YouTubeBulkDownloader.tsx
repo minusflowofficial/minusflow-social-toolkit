@@ -30,9 +30,9 @@ const faqs = [
 ];
 
 const seoBlocks = [
-  { title: "Batch Download Multiple YouTube Videos Simultaneously", content: "YTFetch Bulk Downloader processes up to 10 YouTube URLs in a single session. Perfect for saving entire course series, music collections, or tutorial playlists without the tedium of downloading each video individually. Simply paste your URLs, choose your format, and let our tool do the heavy lifting." },
-  { title: "Smart Sequential Processing for Maximum Reliability", content: "Unlike tools that try to download everything at once (and often fail), YTFetch processes each video sequentially with intelligent delays. This approach ensures every video in your batch is handled reliably, with clear status indicators showing you exactly what's happening at each step." },
-  { title: "Perfect for Content Creators, Students & Educators", content: "Whether you're a student archiving lecture series, a content creator saving reference material, or an educator building an offline resource library — YTFetch Bulk Downloader saves you hours of repetitive work. Back up your favorite content collections in minutes, not hours." },
+  { title: "Batch Download Multiple YouTube Videos Simultaneously", content: "MinusFlow ToolKit Bulk Downloader processes up to 10 YouTube URLs in a single session. Perfect for saving entire course series, music collections, or tutorial playlists without the tedium of downloading each video individually. Simply paste your URLs, choose your format, and let our tool do the heavy lifting." },
+  { title: "Smart Sequential Processing for Maximum Reliability", content: "Unlike tools that try to download everything at once (and often fail), MinusFlow ToolKit processes each video sequentially with intelligent delays. This approach ensures every video in your batch is handled reliably, with clear status indicators showing you exactly what's happening at each step." },
+  { title: "Perfect for Content Creators, Students & Educators", content: "Whether you're a student archiving lecture series, a content creator saving reference material, or an educator building an offline resource library — MinusFlow ToolKit Bulk Downloader saves you hours of repetitive work. Back up your favorite content collections in minutes, not hours." },
 ];
 
 const YouTubeBulkDownloader = () => {
