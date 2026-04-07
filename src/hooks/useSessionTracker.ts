@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { v4 } from "@/lib/uuid";
+
 
 const SESSION_KEY = "mf_session_token";
 const MAX_SESSIONS = 3;
