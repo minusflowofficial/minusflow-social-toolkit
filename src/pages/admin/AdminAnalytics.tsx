@@ -333,8 +333,8 @@ const AdminAnalytics = () => {
           <h3 className="mb-4 text-sm font-semibold text-foreground">Top Pages</h3>
           <div className="space-y-2">
             {topPagesData.length > 0 ? topPagesData.map((p: any, i: number) => {
-              const maxViews = topPagesData[0]?.views || 1;
-              const pct = Math.round((p.views / maxViews) * 100);
+              const maxViews = Number(topPagesData[0]?.views) || 1;
+              const pct = Math.round((Number(p.views) / maxViews) * 100);
               return (
                 <div key={i} className="flex items-center gap-3">
                   <span className="w-6 text-right text-xs font-medium text-muted-foreground">{i + 1}</span>
