@@ -132,7 +132,12 @@ const Header = () => {
           <div className="ml-4 flex items-center gap-2 border-l border-border/30 pl-4">
             {user ? (
               <>
-                <span className="text-xs text-muted-foreground truncate max-w-[140px]">{user.email}</span>
+                <Link
+                  to="/profile"
+                  className="flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                >
+                  <User className="h-3.5 w-3.5" /> Profile
+                </Link>
                 <button
                   onClick={handleSignOut}
                   className="flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
