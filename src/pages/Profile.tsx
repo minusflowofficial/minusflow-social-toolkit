@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import {
   User, Camera, Lock, Eye, BarChart3, Bell, CheckCircle, AlertTriangle,
   Loader2, Save, Shield, Calendar, Mail, Activity, MapPin, Globe, Briefcase,
-  Plus, X, Sparkles, Image as ImageIcon
+  Plus, X, Sparkles, Image as ImageIcon, Play, ImagePlus
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -32,7 +32,6 @@ const Profile = () => {
   const [uploading, setUploading] = useState(false);
   const [uploadingBanner, setUploadingBanner] = useState(false);
 
-  // Editable professional fields
   const [editingBio, setEditingBio] = useState(false);
   const [bio, setBio] = useState("");
   const [editingHeadline, setEditingHeadline] = useState(false);
@@ -73,6 +72,31 @@ const Profile = () => {
     enabled: !!userId,
   });
 
+  // Realtime profile subscription
+  useEffect(() => {
+    if (!userId) return;
+    const channel = supabase
+      .channel(`profile-realtime-${userId}`)
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'profiles', filter: `id=eq.${userId}` }, () => {
+        qc.invalidateQueries({ queryKey: ["user-profile", userId] });
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [userId, qc]);
+
+  // Realtime notifications subscription
+  useEffect(() => {
+    if (!userId) return;
+    const channel = supabase
+      .channel(`notifications-realtime-${userId}`)
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'notifications', filter: `user_id=eq.${userId}` }, () => {
+        qc.invalidateQueries({ queryKey: ["user-notifications", userId] });
+        toast.info("You have a new notification!");
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [userId, qc]);
+
   const { data: pageViewStats } = useQuery({
     queryKey: ["user-page-views", userId],
     queryFn: async () => {
@@ -108,7 +132,6 @@ const Profile = () => {
 
   const unreadCount = notifications?.filter((n) => !n.is_read).length || 0;
 
-  // Save any profile field
   const saveField = useMutation({
     mutationFn: async (fields: Record<string, any>) => {
       const { error } = await supabase.from("profiles").update({ ...fields, updated_at: new Date().toISOString() }).eq("id", userId!);
@@ -241,7 +264,6 @@ const Profile = () => {
       <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6">
         {/* Profile Card */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="relative mb-6 overflow-hidden rounded-2xl border border-border/50 bg-card">
-          {/* Banner */}
           <div className="relative h-36 sm:h-44 overflow-hidden">
             {bannerUrl ? (
               <img src={bannerUrl} alt="" className="h-full w-full object-cover" />
@@ -258,7 +280,6 @@ const Profile = () => {
             <input ref={bannerInputRef} type="file" accept="image/*" className="hidden" onChange={handleBannerUpload} />
           </div>
 
-          {/* Avatar + Info */}
           <div className="relative px-6 pb-6">
             <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-end">
               <div className="relative -mt-14 sm:-mt-16">
@@ -299,7 +320,6 @@ const Profile = () => {
                   </h1>
                 )}
 
-                {/* Headline */}
                 {editingHeadline ? (
                   <div className="mt-1 flex items-center gap-2">
                     <Input value={headline} onChange={(e) => setHeadline(e.target.value)} className="h-8 w-72 bg-muted/50 text-sm" placeholder="e.g. Full Stack Developer" />
@@ -574,6 +594,17 @@ const Profile = () => {
                             <p className="text-sm font-semibold text-foreground">{n.title}</p>
                           </div>
                           <p className="mt-1 text-xs text-muted-foreground">{n.message}</p>
+                          {/* Rich media */}
+                          {(n as any).image_url && (
+                            <div className="mt-2 overflow-hidden rounded-lg border border-border/30">
+                              <img src={(n as any).image_url} alt="" className="max-h-48 w-full object-cover" />
+                            </div>
+                          )}
+                          {(n as any).video_url && (
+                            <div className="mt-2 overflow-hidden rounded-lg border border-border/30">
+                              <video src={(n as any).video_url} controls className="max-h-48 w-full" />
+                            </div>
+                          )}
                         </div>
                         <span className="shrink-0 text-[10px] text-muted-foreground">{new Date(n.created_at).toLocaleDateString()}</span>
                       </div>
