@@ -41,6 +41,33 @@ export type Database = {
         }
         Relationships: []
       }
+      notifications: {
+        Row: {
+          created_at: string
+          id: string
+          is_read: boolean
+          message: string
+          title: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          message: string
+          title: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          message?: string
+          title?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       page_views: {
         Row: {
           country: string | null
@@ -51,6 +78,7 @@ export type Database = {
           referrer: string | null
           session_id: string | null
           user_agent: string | null
+          user_id: string | null
         }
         Insert: {
           country?: string | null
@@ -61,6 +89,7 @@ export type Database = {
           referrer?: string | null
           session_id?: string | null
           user_agent?: string | null
+          user_id?: string | null
         }
         Update: {
           country?: string | null
@@ -71,6 +100,7 @@ export type Database = {
           referrer?: string | null
           session_id?: string | null
           user_agent?: string | null
+          user_id?: string | null
         }
         Relationships: []
       }
