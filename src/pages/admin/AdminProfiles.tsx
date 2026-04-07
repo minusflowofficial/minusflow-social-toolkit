@@ -320,7 +320,7 @@ const AdminProfiles = () => {
 
                 <div className="mt-1 flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
                   <span className="flex items-center gap-1"><Mail className="h-3 w-3" /> {selectedUser.email}</span>
-                  <span className="flex items-center gap-1"><Calendar className="h-3 w-3" /> Joined {new Date(selectedUser.created_at).toLocaleDateString()}</span>
+                  <span className="flex items-center gap-1"><Calendar className="h-3 w-3" /> Joined {selectedUser.created_at ? new Date(selectedUser.created_at).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" }) : "N/A"}</span>
                   {fp?.location && <span className="flex items-center gap-1"><MapPin className="h-3 w-3" /> {fp.location}</span>}
                   <span className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${selectedUser.is_suspended ? "bg-destructive/10 text-destructive" : "bg-green-500/10 text-green-500"}`}>
                     {selectedUser.is_suspended ? "Suspended" : "Active"}
