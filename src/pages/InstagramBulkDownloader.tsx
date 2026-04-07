@@ -119,6 +119,30 @@ const InstagramBulkDownloader = () => {
             )}
           </motion.div>
         ))}
+
+        {/* Download All Button */}
+        {!processing && entries.filter((e) => e.status === "success" && e.result?.download_links?.length).length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+          >
+            <Button
+              onClick={() => {
+                const successEntries = entries.filter((e) => e.status === "success" && e.result?.download_links?.length);
+                successEntries.forEach((entry, idx) => {
+                  setTimeout(() => {
+                    const link = entry.result!.download_links![0];
+                    triggerDownload(link.url, buildFilename(entry.result!, idx, link.quality, link.format));
+                  }, idx * 500);
+                });
+                toast.success(`Started ${successEntries.length} downloads!`);
+              }}
+              className="h-12 w-full gap-2 bg-gradient-to-r from-[#833ab4] via-[#fd1d1d] to-[#fcb045] text-white font-semibold"
+            >
+              <Download className="h-4 w-4" /> Download All ({entries.filter((e) => e.status === "success").length} reels)
+            </Button>
+          </motion.div>
+        )}
       </div>
     </ToolPageLayout>
   );
