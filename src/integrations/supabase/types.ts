@@ -45,26 +45,35 @@ export type Database = {
         Row: {
           created_at: string
           id: string
+          image_url: string | null
           is_read: boolean
           message: string
+          notification_type: string | null
           title: string
           user_id: string
+          video_url: string | null
         }
         Insert: {
           created_at?: string
           id?: string
+          image_url?: string | null
           is_read?: boolean
           message: string
+          notification_type?: string | null
           title: string
           user_id: string
+          video_url?: string | null
         }
         Update: {
           created_at?: string
           id?: string
+          image_url?: string | null
           is_read?: boolean
           message?: string
+          notification_type?: string | null
           title?: string
           user_id?: string
+          video_url?: string | null
         }
         Relationships: []
       }
@@ -117,6 +126,7 @@ export type Database = {
           id: string
           is_suspended: boolean
           location: string | null
+          max_devices: number | null
           skills: string[] | null
           suspended_reason: string | null
           updated_at: string
@@ -134,6 +144,7 @@ export type Database = {
           id: string
           is_suspended?: boolean
           location?: string | null
+          max_devices?: number | null
           skills?: string[] | null
           suspended_reason?: string | null
           updated_at?: string
@@ -151,6 +162,7 @@ export type Database = {
           id?: string
           is_suspended?: boolean
           location?: string | null
+          max_devices?: number | null
           skills?: string[] | null
           suspended_reason?: string | null
           updated_at?: string
