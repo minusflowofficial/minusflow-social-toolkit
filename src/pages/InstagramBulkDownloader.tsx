@@ -4,6 +4,7 @@ import { Download, Loader2, DownloadCloud, CheckCircle2, XCircle, Instagram, Zap
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Progress } from "@/components/ui/progress";
+import { toast } from "sonner";
 import ToolPageLayout from "@/components/ToolPageLayout";
 
 const FUNCTION_BASE = `https://uphyqimrsclstdumeuwf.supabase.co/functions/v1/fetch-reel`;
