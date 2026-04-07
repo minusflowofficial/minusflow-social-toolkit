@@ -76,16 +76,19 @@ const waitForPreparedDownload = async (url: string) => {
       }
 
       if (!isPreparationPending(response)) {
-        return false;
+        // If HEAD fails with non-preparation error, try direct download anyway
+        return true;
       }
     } catch {
-      return false;
+      // On fetch error (CORS etc), just try direct download
+      return true;
     }
 
     await wait(DOWNLOAD_PREPARATION_RETRY_MS);
   }
 
-  return false;
+  // After max attempts, try download anyway
+  return true;
 };
 
 const startPreparedDownload = async (

@@ -126,6 +126,45 @@ const TikTokBulkDownloader = () => {
             )}
           </motion.div>
         ))}
+
+        {/* Download All Button */}
+        {!processing && items.filter((i) => i.status === "success" && i.result?.download_url_no_watermark).length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="flex flex-col gap-2 sm:flex-row sm:gap-3"
+          >
+            <Button
+              onClick={() => {
+                const successItems = items.filter((i) => i.status === "success" && i.result?.download_url_no_watermark);
+                successItems.forEach((item, idx) => {
+                  setTimeout(() => {
+                    openDownload(item.result!.download_url_no_watermark, item.result!.title, "mp4");
+                  }, idx * 500);
+                });
+                toast.success(`Started ${successItems.length} downloads!`);
+              }}
+              className="h-12 w-full gap-2 bg-[hsl(348,98%,57%)] hover:bg-[hsl(348,98%,50%)] text-white font-semibold"
+            >
+              <Download className="h-4 w-4" /> Download All MP4 ({items.filter((i) => i.status === "success").length} videos)
+            </Button>
+            <Button
+              variant="secondary"
+              onClick={() => {
+                const successItems = items.filter((i) => i.status === "success" && i.result?.download_url_mp3);
+                successItems.forEach((item, idx) => {
+                  setTimeout(() => {
+                    openDownload(item.result!.download_url_mp3, item.result!.title, "mp3");
+                  }, idx * 500);
+                });
+                toast.success(`Started ${successItems.length} audio downloads!`);
+              }}
+              className="h-12 w-full gap-2 font-semibold"
+            >
+              <Music className="h-4 w-4" /> Download All MP3
+            </Button>
+          </motion.div>
+        )}
       </div>
     </ToolPageLayout>
   );
