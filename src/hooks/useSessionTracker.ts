@@ -1,9 +1,9 @@
 import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
-
 const SESSION_KEY = "mf_session_token";
 const MAX_SESSIONS = 3;
+const HEARTBEAT_MS = 60_000; // 1 minute for faster detection
 
 function getSessionToken(): string {
   let token = localStorage.getItem(SESSION_KEY);
@@ -18,7 +18,27 @@ export function useSessionTracker() {
   const [blocked, setBlocked] = useState(false);
   const [checking, setChecking] = useState(true);
 
+  const checkSuspension = useCallback(async (userId: string) => {
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("is_suspended")
+      .eq("id", userId)
+      .maybeSingle();
+
+    if (profile?.is_suspended) {
+      setBlocked(true);
+      return true;
+    }
+    return false;
+  }, []);
+
   const checkAndRegister = useCallback(async (userId: string) => {
+    // Check suspension first
+    if (await checkSuspension(userId)) {
+      setChecking(false);
+      return;
+    }
+
     const sessionToken = getSessionToken();
 
     // Upsert current session
@@ -35,9 +55,7 @@ export function useSessionTracker() {
         { onConflict: "session_token" }
       );
 
-    // If upsert failed (no unique constraint on session_token), try insert
     if (upsertErr) {
-      // Check if this session already exists
       const { data: existing } = await supabase
         .from("user_sessions")
         .select("id")
@@ -69,7 +87,6 @@ export function useSessionTracker() {
 
     if (count && count > MAX_SESSIONS) {
       setBlocked(true);
-      // Suspend user profile
       await supabase
         .from("profiles")
         .update({
@@ -79,19 +96,8 @@ export function useSessionTracker() {
         .eq("id", userId);
     }
 
-    // Check if profile is suspended
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("is_suspended")
-      .eq("id", userId)
-      .maybeSingle();
-
-    if (profile?.is_suspended) {
-      setBlocked(true);
-    }
-
     setChecking(false);
-  }, []);
+  }, [checkSuspension]);
 
   useEffect(() => {
     let cleanup = false;
@@ -105,7 +111,7 @@ export function useSessionTracker() {
       }
     });
 
-    // Heartbeat every 2 minutes
+    // Heartbeat every 1 minute — also re-checks suspension
     const interval = setInterval(async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (session?.user) {
@@ -115,14 +121,17 @@ export function useSessionTracker() {
           .update({ last_active_at: new Date().toISOString() })
           .eq("user_id", session.user.id)
           .eq("session_token", token);
+
+        // Re-check suspension on every heartbeat
+        await checkSuspension(session.user.id);
       }
-    }, 120000);
+    }, HEARTBEAT_MS);
 
     return () => {
       cleanup = true;
       clearInterval(interval);
     };
-  }, [checkAndRegister]);
+  }, [checkAndRegister, checkSuspension]);
 
   return { blocked, checking };
 }
