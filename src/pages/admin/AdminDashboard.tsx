@@ -271,31 +271,20 @@ const AdminDashboard = () => {
                       </Button>
                     )}
 
-                    {/* Suspend / Unsuspend */}
+                    {/* Status Dropdown */}
                     {u.id !== user?.id && (
-                      u.is_suspended ? (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => unsuspendUser.mutate(u.id)}
-                          className="h-8 gap-1.5 border-green-500/30 text-xs text-green-500 hover:bg-green-500/10"
-                        >
-                          <Unlock className="h-3.5 w-3.5" /> Unsuspend
-                        </Button>
-                      ) : (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => {
-                            if (confirm(`Suspend ${u.email}?`)) {
-                              suspendUser.mutate({ user_id: u.id, reason: "Manually suspended by admin" });
-                            }
-                          }}
-                          className="h-8 gap-1.5 border-destructive/30 text-xs text-destructive hover:bg-destructive/10"
-                        >
-                          <Ban className="h-3.5 w-3.5" /> Suspend
-                        </Button>
-                      )
+                      <UserStatusDropdown
+                        currentStatus={u.suspended_reason === "Marked as spammer by admin" ? "spammer" : u.is_suspended ? "suspended" : "active"}
+                        onStatusChange={(status) => {
+                          if (status === "active") {
+                            unsuspendUser.mutate(u.id);
+                          } else if (status === "suspended") {
+                            suspendUser.mutate({ user_id: u.id, reason: "Manually suspended by admin" });
+                          } else if (status === "spammer") {
+                            suspendUser.mutate({ user_id: u.id, reason: "Marked as spammer by admin" });
+                          }
+                        }}
+                      />
                     )}
                   </div>
                 </motion.div>
