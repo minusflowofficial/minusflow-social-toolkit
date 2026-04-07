@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Save, AlertTriangle, Globe, Palette, Flag, Plus, Trash2, X, Gauge, Image, Type, LogIn } from "lucide-react";
+import { Save, AlertTriangle, Globe, Palette, Flag, Plus, Trash2, X, Gauge, Image, Type, LogIn, Link2, BarChart3, DollarSign, Search, Shield, Zap, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useSiteSettings, useUpdateSetting } from "@/hooks/useSiteSettings";
@@ -409,10 +409,98 @@ const AdminSettings = () => {
           </div>
         </motion.div>
 
+        {/* Integrations */}
+        <IntegrationsSection canEdit={canEdit} settings={settings} updateSetting={updateSetting} />
+
         {/* Feature Flags */}
         <FeatureFlagsSection canEdit={canEdit} />
       </div>
     </div>
+  );
+};
+
+const IntegrationsSection = ({ canEdit, settings, updateSetting }: { canEdit: boolean; settings: any; updateSetting: any }) => {
+  const integrations = settings?.integrations || {};
+  const [gscId, setGscId] = useState(integrations.google_search_console?.property_url || "");
+  const [gaId, setGaId] = useState(integrations.google_analytics?.measurement_id || "");
+  const [adsenseId, setAdsenseId] = useState(integrations.google_adsense?.publisher_id || "");
+  const [gtagId, setGtagId] = useState(integrations.google_tag_manager?.container_id || "");
+  const [fbPixel, setFbPixel] = useState(integrations.facebook_pixel?.pixel_id || "");
+  const [clarityId, setClarityId] = useState(integrations.microsoft_clarity?.project_id || "");
+
+  useEffect(() => {
+    if (settings?.integrations) {
+      const ig = settings.integrations;
+      setGscId(ig.google_search_console?.property_url || "");
+      setGaId(ig.google_analytics?.measurement_id || "");
+      setAdsenseId(ig.google_adsense?.publisher_id || "");
+      setGtagId(ig.google_tag_manager?.container_id || "");
+      setFbPixel(ig.facebook_pixel?.pixel_id || "");
+      setClarityId(ig.microsoft_clarity?.project_id || "");
+    }
+  }, [settings]);
+
+  const saveIntegrations = async () => {
+    try {
+      await updateSetting.mutateAsync({
+        key: "integrations",
+        value: {
+          google_search_console: { property_url: gscId.trim(), enabled: !!gscId.trim() },
+          google_analytics: { measurement_id: gaId.trim(), enabled: !!gaId.trim() },
+          google_adsense: { publisher_id: adsenseId.trim(), enabled: !!adsenseId.trim() },
+          google_tag_manager: { container_id: gtagId.trim(), enabled: !!gtagId.trim() },
+          facebook_pixel: { pixel_id: fbPixel.trim(), enabled: !!fbPixel.trim() },
+          microsoft_clarity: { project_id: clarityId.trim(), enabled: !!clarityId.trim() },
+        },
+      });
+      toast.success("Integrations saved");
+    } catch (err: any) {
+      toast.error(err.message);
+    }
+  };
+
+  const items = [
+    { label: "Google Search Console", desc: "Property URL (e.g. sc-domain:example.com)", value: gscId, set: setGscId, icon: Search, color: "text-blue-500" },
+    { label: "Google Analytics", desc: "Measurement ID (e.g. G-XXXXXXXXXX)", value: gaId, set: setGaId, icon: BarChart3, color: "text-yellow-500" },
+    { label: "Google AdSense", desc: "Publisher ID (e.g. ca-pub-XXXXXXXX)", value: adsenseId, set: setAdsenseId, icon: DollarSign, color: "text-green-500" },
+    { label: "Google Tag Manager", desc: "Container ID (e.g. GTM-XXXXXXX)", value: gtagId, set: setGtagId, icon: Zap, color: "text-orange-500" },
+    { label: "Facebook Pixel", desc: "Pixel ID", value: fbPixel, set: setFbPixel, icon: Globe, color: "text-blue-600" },
+    { label: "Microsoft Clarity", desc: "Project ID", value: clarityId, set: setClarityId, icon: Shield, color: "text-purple-500" },
+  ];
+
+  return (
+    <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.28 }} className="rounded-xl border border-border/50 bg-card p-6">
+      <div className="mb-4 flex items-center gap-3">
+        <Link2 className="h-5 w-5 text-primary" />
+        <h2 className="text-lg font-semibold text-foreground">Integrations</h2>
+      </div>
+      <p className="mb-4 text-xs text-muted-foreground">Connect analytics, advertising, and tracking tools to your website.</p>
+      <div className="space-y-4">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          {items.map((item) => (
+            <div key={item.label} className="rounded-lg bg-muted/30 p-3">
+              <div className="mb-1.5 flex items-center gap-2">
+                <item.icon className={`h-4 w-4 ${item.color}`} />
+                <label className="text-[11px] font-medium text-foreground">{item.label}</label>
+                {item.value && <span className="ml-auto h-2 w-2 rounded-full bg-green-500" />}
+              </div>
+              <Input
+                value={item.value}
+                onChange={(e) => item.set(e.target.value)}
+                placeholder={item.desc}
+                disabled={!canEdit}
+                className="h-9 bg-muted/50 text-sm"
+              />
+            </div>
+          ))}
+        </div>
+        {canEdit && (
+          <Button onClick={saveIntegrations} disabled={updateSetting.isPending} className="gap-2">
+            <Save className="h-4 w-4" /> Save Integrations
+          </Button>
+        )}
+      </div>
+    </motion.div>
   );
 };
 

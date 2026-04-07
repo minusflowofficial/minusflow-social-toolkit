@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -6,7 +6,7 @@ import {
   Users, UserCheck, UserX, ShieldAlert, Search, ChevronRight,
   Bell, Send, Loader2, X, Eye, BarChart3, Mail, Calendar, User,
   ArrowLeft, Activity, MapPin, Globe, Briefcase, Sparkles, Save,
-  Camera, Image as ImageIcon, Pencil, Plus
+  Camera, Image as ImageIcon, Pencil, Plus, Monitor, ImagePlus, Play
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -44,12 +44,18 @@ interface UserProfile {
 const AdminProfiles = () => {
   const { role } = useAuth();
   const qc = useQueryClient();
+  const avatarInputRef = useRef<HTMLInputElement>(null);
+  const bannerInputRef = useRef<HTMLInputElement>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedUser, setSelectedUser] = useState<UserProfile | null>(null);
   const [showNotifyModal, setShowNotifyModal] = useState(false);
   const [notifyTitle, setNotifyTitle] = useState("");
   const [notifyMessage, setNotifyMessage] = useState("");
+  const [notifyImageUrl, setNotifyImageUrl] = useState("");
+  const [notifyVideoUrl, setNotifyVideoUrl] = useState("");
+  const [notifyType, setNotifyType] = useState<"text" | "image" | "video">("text");
   const [notifyUserId, setNotifyUserId] = useState("");
+  const [notifyAll, setNotifyAll] = useState(false);
 
   // Admin edit state
   const [editBio, setEditBio] = useState(false);
@@ -68,6 +74,10 @@ const AdminProfiles = () => {
   const [newExpVal, setNewExpVal] = useState<ExperienceItem>({ title: "", company: "", duration: "", description: "" });
   const [editName, setEditName] = useState(false);
   const [nameVal, setNameVal] = useState("");
+  const [editDevices, setEditDevices] = useState(false);
+  const [devicesVal, setDevicesVal] = useState("3");
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [uploadingBanner, setUploadingBanner] = useState(false);
 
   const isAdmin = role === "admin" || role === "super_admin";
 
@@ -101,7 +111,6 @@ const AdminProfiles = () => {
     enabled: !!selectedUser?.id,
   });
 
-  // Fetch full profile data from profiles table for selected user
   const { data: fullProfile } = useQuery({
     queryKey: ["admin-user-full-profile", selectedUser?.id],
     queryFn: async () => {
@@ -114,10 +123,34 @@ const AdminProfiles = () => {
   const sendNotification = useMutation({
     mutationFn: async () => {
       if (!notifyTitle.trim() || !notifyMessage.trim()) throw new Error("Title and message required");
-      const { error } = await supabase.from("notifications").insert({ user_id: notifyUserId, title: notifyTitle.trim(), message: notifyMessage.trim() });
-      if (error) throw error;
+      
+      const notifData: any = {
+        title: notifyTitle.trim(),
+        message: notifyMessage.trim(),
+        notification_type: notifyType,
+        image_url: notifyType === "image" ? notifyImageUrl.trim() : "",
+        video_url: notifyType === "video" ? notifyVideoUrl.trim() : "",
+      };
+
+      if (notifyAll && allUsers) {
+        const inserts = allUsers.map((u) => ({ ...notifData, user_id: u.id }));
+        const { error } = await supabase.from("notifications").insert(inserts);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase.from("notifications").insert({ ...notifData, user_id: notifyUserId });
+        if (error) throw error;
+      }
     },
-    onSuccess: () => { toast.success("Notification sent!"); setShowNotifyModal(false); setNotifyTitle(""); setNotifyMessage(""); },
+    onSuccess: () => {
+      toast.success(notifyAll ? "Notification sent to all users!" : "Notification sent!");
+      setShowNotifyModal(false);
+      setNotifyTitle("");
+      setNotifyMessage("");
+      setNotifyImageUrl("");
+      setNotifyVideoUrl("");
+      setNotifyType("text");
+      setNotifyAll(false);
+    },
     onError: (err: any) => toast.error(err.message),
   });
 
@@ -134,6 +167,41 @@ const AdminProfiles = () => {
     onError: (err: any) => toast.error(err.message),
   });
 
+  const handleAdminAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !selectedUser) return;
+    if (file.size > 2 * 1024 * 1024) { toast.error("Max 2MB"); return; }
+    setUploadingAvatar(true);
+    try {
+      const ext = file.name.split(".").pop();
+      const path = `${selectedUser.id}/avatar.${ext}`;
+      await supabase.storage.from("avatars").upload(path, file, { upsert: true });
+      const { data: urlData } = supabase.storage.from("avatars").getPublicUrl(path);
+      await supabase.from("profiles").update({ avatar_url: urlData.publicUrl + "?t=" + Date.now(), updated_at: new Date().toISOString() }).eq("id", selectedUser.id);
+      toast.success("Avatar updated");
+      qc.invalidateQueries({ queryKey: ["admin-user-full-profile", selectedUser.id] });
+      qc.invalidateQueries({ queryKey: ["admin-all-users"] });
+    } catch (err: any) { toast.error(err.message); }
+    finally { setUploadingAvatar(false); }
+  };
+
+  const handleAdminBannerUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !selectedUser) return;
+    if (file.size > 5 * 1024 * 1024) { toast.error("Max 5MB"); return; }
+    setUploadingBanner(true);
+    try {
+      const ext = file.name.split(".").pop();
+      const path = `${selectedUser.id}/banner.${ext}`;
+      await supabase.storage.from("banners").upload(path, file, { upsert: true });
+      const { data: urlData } = supabase.storage.from("banners").getPublicUrl(path);
+      await supabase.from("profiles").update({ banner_url: urlData.publicUrl + "?t=" + Date.now(), updated_at: new Date().toISOString() }).eq("id", selectedUser.id);
+      toast.success("Banner updated");
+      qc.invalidateQueries({ queryKey: ["admin-user-full-profile", selectedUser.id] });
+    } catch (err: any) { toast.error(err.message); }
+    finally { setUploadingBanner(false); }
+  };
+
   const totalUsers = allUsers?.length ?? 0;
   const activeUsers = allUsers?.filter((u) => !u.is_suspended && u.email_confirmed).length ?? 0;
   const unverifiedUsers = allUsers?.filter((u) => !u.email_confirmed).length ?? 0;
@@ -144,7 +212,6 @@ const AdminProfiles = () => {
     u.full_name?.toLowerCase().includes(searchQuery.toLowerCase())
   ) ?? [];
 
-  // Sync edit state when fullProfile loads
   const syncEditState = () => {
     if (fullProfile) {
       setBioVal((fullProfile as any).bio || "");
@@ -154,6 +221,7 @@ const AdminProfiles = () => {
       setSkillsVal((fullProfile as any).skills || []);
       try { setExperienceVal(JSON.parse(JSON.stringify((fullProfile as any).experience || []))); } catch { setExperienceVal([]); }
       setNameVal(fullProfile.full_name || "");
+      setDevicesVal(String((fullProfile as any).max_devices ?? 3));
     }
   };
 
@@ -174,36 +242,55 @@ const AdminProfiles = () => {
     const profileExperience: ExperienceItem[] = (() => { try { return fp?.experience || []; } catch { return []; } })();
     const bounceRate = userPageViews?.bounceRate ?? 0;
 
-    // Sync state on first render
     if (fp && bioVal === "" && !editBio && (fp.bio || "") !== bioVal) {
       syncEditState();
     }
 
     return (
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-        <Button variant="ghost" size="sm" className="mb-4 gap-1.5" onClick={() => { setSelectedUser(null); setEditBio(false); setEditHeadline(false); setEditLocation(false); setEditWebsite(false); setEditSkills(false); setEditExperience(false); setEditName(false); }}>
+        <Button variant="ghost" size="sm" className="mb-4 gap-1.5" onClick={() => { setSelectedUser(null); setEditBio(false); setEditHeadline(false); setEditLocation(false); setEditWebsite(false); setEditSkills(false); setEditExperience(false); setEditName(false); setEditDevices(false); }}>
           <ArrowLeft className="h-4 w-4" /> Back to Users
         </Button>
 
-        {/* Profile Card */}
+        {/* Profile Card with Admin Upload */}
         <div className="mb-6 overflow-hidden rounded-2xl border border-border/50 bg-card">
-          <div className="relative h-32 sm:h-40 overflow-hidden">
+          <div className="relative h-32 sm:h-40 overflow-hidden group">
             {bannerUrl ? (
               <img src={bannerUrl} alt="" className="h-full w-full object-cover" />
             ) : (
               <div className="h-full bg-gradient-to-r from-primary/30 via-primary/10 to-accent/20" />
             )}
+            <button
+              onClick={() => bannerInputRef.current?.click()}
+              className="absolute right-3 top-3 flex items-center gap-1.5 rounded-lg bg-background/70 px-3 py-1.5 text-xs font-medium text-foreground backdrop-blur-sm transition-all opacity-0 group-hover:opacity-100 hover:bg-background/90"
+            >
+              {uploadingBanner ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ImageIcon className="h-3.5 w-3.5" />}
+              Change Banner
+            </button>
+            <input ref={bannerInputRef} type="file" accept="image/*" className="hidden" onChange={handleAdminBannerUpload} />
           </div>
           <div className="relative px-6 pb-6">
             <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-end">
-              <div className="relative -mt-12">
+              <div className="relative -mt-12 group">
                 <div className="h-20 w-20 overflow-hidden rounded-2xl border-4 border-card bg-muted shadow-xl">
                   {selectedUser.avatar_url ? (
                     <img src={selectedUser.avatar_url} alt="" className="h-full w-full object-cover" />
                   ) : (
                     <div className="flex h-full w-full items-center justify-center bg-primary/10"><User className="h-8 w-8 text-primary" /></div>
                   )}
+                  {uploadingAvatar && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-background/60 rounded-2xl">
+                      <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                    </div>
+                  )}
                 </div>
+                <button
+                  onClick={() => avatarInputRef.current?.click()}
+                  className="absolute -bottom-1 -right-1 flex h-7 w-7 items-center justify-center rounded-full border-2 border-card bg-primary text-primary-foreground shadow-lg transition-transform hover:scale-110 opacity-0 group-hover:opacity-100"
+                >
+                  <Camera className="h-3 w-3" />
+                </button>
+                <input ref={avatarInputRef} type="file" accept="image/*" className="hidden" onChange={handleAdminAvatarUpload} />
               </div>
               <div className="flex-1 pt-2">
                 {editName ? (
@@ -219,7 +306,6 @@ const AdminProfiles = () => {
                   </div>
                 )}
 
-                {/* Headline */}
                 {editHeadline ? (
                   <div className="mt-1 flex items-center gap-2">
                     <Input value={headlineVal} onChange={(e) => setHeadlineVal(e.target.value)} className="h-7 w-64 bg-muted/50 text-xs" placeholder="Headline" />
@@ -241,7 +327,7 @@ const AdminProfiles = () => {
                   </span>
                 </div>
               </div>
-              <Button size="sm" variant="outline" className="gap-1.5" onClick={() => { setNotifyUserId(selectedUser.id); setShowNotifyModal(true); }}>
+              <Button size="sm" variant="outline" className="gap-1.5" onClick={() => { setNotifyUserId(selectedUser.id); setNotifyAll(false); setShowNotifyModal(true); }}>
                 <Bell className="h-3.5 w-3.5" /> Send Notification
               </Button>
             </div>
@@ -386,7 +472,7 @@ const AdminProfiles = () => {
           )}
         </div>
 
-        {/* Account Details */}
+        {/* Account Details + Device Limit */}
         <div className="rounded-xl border border-border/50 bg-card p-6">
           <h3 className="mb-4 text-sm font-semibold text-foreground">Account Details</h3>
           <div className="space-y-3">
@@ -402,6 +488,22 @@ const AdminProfiles = () => {
                 <span className="text-xs font-medium text-foreground">{item.value}</span>
               </div>
             ))}
+            {/* Device Limit */}
+            <div className="flex items-center justify-between rounded-lg bg-muted/20 px-4 py-2.5">
+              <span className="text-xs text-muted-foreground flex items-center gap-1.5"><Monitor className="h-3 w-3" /> Max Devices Allowed</span>
+              {editDevices ? (
+                <div className="flex items-center gap-2">
+                  <Input type="number" value={devicesVal} onChange={(e) => setDevicesVal(e.target.value)} className="h-7 w-16 bg-muted/50 text-xs text-center" min="1" max="20" />
+                  <Button size="sm" variant="ghost" className="h-7 px-2" onClick={() => { saveProfileField.mutate({ max_devices: Number(devicesVal) }); setEditDevices(false); }}><Save className="h-3 w-3" /></Button>
+                  <Button size="sm" variant="ghost" className="h-7 px-2" onClick={() => setEditDevices(false)}><X className="h-3 w-3" /></Button>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-medium text-foreground">{fp?.max_devices ?? 3}</span>
+                  <button onClick={() => { setDevicesVal(String(fp?.max_devices ?? 3)); setEditDevices(true); }} className="text-muted-foreground/60 hover:text-primary"><Pencil className="h-3 w-3" /></button>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </motion.div>
@@ -427,13 +529,18 @@ const AdminProfiles = () => {
         ))}
       </div>
 
-      {/* User List */}
+      {/* Broadcast + User List */}
       <div className="rounded-xl border border-border/50 bg-card p-6">
         <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <h2 className="text-lg font-semibold text-foreground">User Profiles</h2>
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input placeholder="Search users..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="h-9 w-60 bg-muted/30 pl-9 text-sm" />
+          <div className="flex items-center gap-2">
+            <Button size="sm" variant="outline" className="gap-1.5 text-xs" onClick={() => { setNotifyAll(true); setShowNotifyModal(true); }}>
+              <Send className="h-3 w-3" /> Broadcast to All
+            </Button>
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input placeholder="Search users..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="h-9 w-60 bg-muted/30 pl-9 text-sm" />
+            </div>
           </div>
         </div>
 
@@ -458,7 +565,7 @@ const AdminProfiles = () => {
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Button variant="ghost" size="sm" className="h-8 gap-1 text-xs" onClick={(e) => { e.stopPropagation(); setNotifyUserId(u.id); setShowNotifyModal(true); }}>
+                  <Button variant="ghost" size="sm" className="h-8 gap-1 text-xs" onClick={(e) => { e.stopPropagation(); setNotifyUserId(u.id); setNotifyAll(false); setShowNotifyModal(true); }}>
                     <Bell className="h-3 w-3" />
                   </Button>
                   <ChevronRight className="h-4 w-4 text-muted-foreground" />
@@ -469,17 +576,35 @@ const AdminProfiles = () => {
         )}
       </div>
 
-      {/* Notification Modal */}
+      {/* Rich Notification Modal */}
       <AnimatePresence>
         {showNotifyModal && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm" onClick={() => setShowNotifyModal(false)}>
             <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }}
-              onClick={(e) => e.stopPropagation()} className="mx-4 w-full max-w-md rounded-2xl border border-border/50 bg-card p-6 shadow-2xl">
+              onClick={(e) => e.stopPropagation()} className="mx-4 w-full max-w-lg rounded-2xl border border-border/50 bg-card p-6 shadow-2xl">
               <div className="mb-4 flex items-center justify-between">
-                <h3 className="text-lg font-semibold text-foreground">Send Notification</h3>
+                <h3 className="text-lg font-semibold text-foreground">{notifyAll ? "Broadcast Notification" : "Send Notification"}</h3>
                 <button onClick={() => setShowNotifyModal(false)} className="text-muted-foreground hover:text-foreground"><X className="h-5 w-5" /></button>
               </div>
+              {notifyAll && <p className="mb-3 text-xs text-yellow-500 bg-yellow-500/10 rounded-lg px-3 py-2">⚡ This will send to all {totalUsers} users</p>}
+
+              {/* Notification Type Tabs */}
+              <div className="mb-4 flex gap-1 rounded-lg bg-muted/30 p-1">
+                {[
+                  { id: "text" as const, label: "Text", icon: Send },
+                  { id: "image" as const, label: "Image", icon: ImagePlus },
+                  { id: "video" as const, label: "Video", icon: Play },
+                ].map((t) => (
+                  <button key={t.id} onClick={() => setNotifyType(t.id)}
+                    className={`flex flex-1 items-center justify-center gap-1.5 rounded-md px-3 py-2 text-xs font-medium transition-all ${
+                      notifyType === t.id ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+                    }`}>
+                    <t.icon className="h-3.5 w-3.5" /> {t.label}
+                  </button>
+                ))}
+              </div>
+
               <div className="space-y-3">
                 <div>
                   <label className="mb-1 block text-xs text-muted-foreground">Title</label>
@@ -487,12 +612,29 @@ const AdminProfiles = () => {
                 </div>
                 <div>
                   <label className="mb-1 block text-xs text-muted-foreground">Message</label>
-                  <textarea value={notifyMessage} onChange={(e) => setNotifyMessage(e.target.value)} placeholder="Type your message..." rows={4}
+                  <textarea value={notifyMessage} onChange={(e) => setNotifyMessage(e.target.value)} placeholder="Type your message..." rows={3}
                     className="w-full rounded-md border border-input bg-muted/30 px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring" />
                 </div>
+                {notifyType === "image" && (
+                  <div>
+                    <label className="mb-1 block text-xs text-muted-foreground">Image URL</label>
+                    <Input value={notifyImageUrl} onChange={(e) => setNotifyImageUrl(e.target.value)} placeholder="https://example.com/image.jpg" className="bg-muted/30" />
+                    {notifyImageUrl && (
+                      <div className="mt-2 overflow-hidden rounded-lg border border-border/30">
+                        <img src={notifyImageUrl} alt="Preview" className="max-h-32 w-full object-cover" onError={(e) => (e.currentTarget.style.display = "none")} />
+                      </div>
+                    )}
+                  </div>
+                )}
+                {notifyType === "video" && (
+                  <div>
+                    <label className="mb-1 block text-xs text-muted-foreground">Video URL</label>
+                    <Input value={notifyVideoUrl} onChange={(e) => setNotifyVideoUrl(e.target.value)} placeholder="https://example.com/video.mp4" className="bg-muted/30" />
+                  </div>
+                )}
                 <Button onClick={() => sendNotification.mutate()} disabled={sendNotification.isPending || !notifyTitle || !notifyMessage} className="w-full gap-2">
                   {sendNotification.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-                  Send Notification
+                  {notifyAll ? "Broadcast to All Users" : "Send Notification"}
                 </Button>
               </div>
             </motion.div>
