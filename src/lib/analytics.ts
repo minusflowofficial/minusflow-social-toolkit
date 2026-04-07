@@ -13,11 +13,14 @@ const getSessionId = (): string => {
 // Track a page view
 export const trackPageView = async (path: string) => {
   try {
+    const { data: { session } } = await supabase.auth.getSession();
+    const userId = session?.user?.id || null;
     await supabase.from("page_views").insert({
       path,
       referrer: document.referrer || "",
       user_agent: navigator.userAgent || "",
       session_id: getSessionId(),
+      user_id: userId,
     });
   } catch {
     // Silent fail — don't break the app for analytics
