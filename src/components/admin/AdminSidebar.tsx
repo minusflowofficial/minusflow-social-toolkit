@@ -13,7 +13,6 @@ const navItems = [
   { to: "/admin/users", icon: Users, label: "Users" },
   { to: "/admin/profiles", icon: UserCircle, label: "Profiles" },
   { to: "/admin/settings", icon: Settings, label: "Settings" },
-  { to: "/admin/settings", icon: Settings, label: "Settings" },
 ];
 
 const AdminSidebar = () => {
