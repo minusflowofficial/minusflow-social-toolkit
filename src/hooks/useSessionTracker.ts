@@ -101,17 +101,37 @@ export function useSessionTracker() {
 
   useEffect(() => {
     let cleanup = false;
+    let realtimeChannel: any = null;
 
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (cleanup) return;
       if (session?.user) {
         checkAndRegister(session.user.id);
+
+        // Subscribe to realtime profile changes for instant suspend detection
+        realtimeChannel = supabase
+          .channel(`profile-suspend-${session.user.id}`)
+          .on(
+            'postgres_changes',
+            {
+              event: 'UPDATE',
+              schema: 'public',
+              table: 'profiles',
+              filter: `id=eq.${session.user.id}`,
+            },
+            (payload: any) => {
+              if (payload.new?.is_suspended) {
+                setBlocked(true);
+              }
+            }
+          )
+          .subscribe();
       } else {
         setChecking(false);
       }
     });
 
-    // Heartbeat every 1 minute — also re-checks suspension
+    // Heartbeat every 1 minute
     const interval = setInterval(async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (session?.user) {
@@ -122,7 +142,6 @@ export function useSessionTracker() {
           .eq("user_id", session.user.id)
           .eq("session_token", token);
 
-        // Re-check suspension on every heartbeat
         await checkSuspension(session.user.id);
       }
     }, HEARTBEAT_MS);
@@ -130,6 +149,7 @@ export function useSessionTracker() {
     return () => {
       cleanup = true;
       clearInterval(interval);
+      if (realtimeChannel) supabase.removeChannel(realtimeChannel);
     };
   }, [checkAndRegister, checkSuspension]);
 
