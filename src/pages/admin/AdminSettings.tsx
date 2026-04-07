@@ -504,6 +504,7 @@ const IntegrationsSection = ({ canEdit, settings, updateSetting }: { canEdit: bo
   );
 };
 
+const FeatureFlagsSection = ({ canEdit }: { canEdit: boolean }) => {
   const { data: flags, isLoading } = useFeatureFlags();
   const toggleFlag = useToggleFlag();
   const createFlag = useCreateFlag();
