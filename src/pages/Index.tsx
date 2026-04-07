@@ -13,7 +13,7 @@ import useDownloadCount from "@/hooks/useDownloadCount";
 const trustItems = [
   { icon: Zap, label: "Lightning Fast", desc: "Instant processing on all tools" },
   { icon: Shield, label: "100% Safe", desc: "No data stored, ever" },
-  { icon: Clock, label: "Always Free", desc: "No sign-up required" },
+  { icon: Clock, label: "Always Free", desc: "Free for all registered users" },
 ];
 
 const Index = () => {
