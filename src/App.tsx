@@ -25,6 +25,7 @@ import AdminSettings from "./pages/admin/AdminSettings.tsx";
 import AdminUsers from "./pages/admin/AdminUsers.tsx";
 import AdminAnalytics from "./pages/admin/AdminAnalytics.tsx";
 import AdminLogs from "./pages/admin/AdminLogs.tsx";
+import AdminProfiles from "./pages/admin/AdminProfiles.tsx";
 
 // Split tool pages
 import YouTubeSingleDownloader from "./pages/YouTubeSingleDownloader.tsx";
@@ -37,6 +38,7 @@ import InstagramBulkDownloader from "./pages/InstagramBulkDownloader.tsx";
 import SignIn from "./pages/SignIn.tsx";
 import SignUp from "./pages/SignUp.tsx";
 import AuthGuardLayout from "./components/AuthGuardLayout.tsx";
+import Profile from "./pages/Profile.tsx";
 
 const queryClient = new QueryClient();
 
@@ -72,6 +74,7 @@ const App = () => (
           <Route path="/tiktok" element={<AuthGuardLayout><TikTokDownloader /></AuthGuardLayout>} />
           <Route path="/signin" element={<SignIn />} />
           <Route path="/signup" element={<SignUp />} />
+          <Route path="/profile" element={<AuthGuardLayout><Profile /></AuthGuardLayout>} />
           <Route path="/instagram" element={<AuthGuardLayout><InstagramDownloader /></AuthGuardLayout>} />
 
           {/* Admin routes */}
@@ -82,6 +85,7 @@ const App = () => (
             <Route path="analytics" element={<AdminAnalytics />} />
             <Route path="logs" element={<AdminLogs />} />
             <Route path="users" element={<AdminUsers />} />
+            <Route path="profiles" element={<AdminProfiles />} />
             <Route path="settings" element={<AdminSettings />} />
           </Route>
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

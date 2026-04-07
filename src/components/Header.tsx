@@ -132,7 +132,12 @@ const Header = () => {
           <div className="ml-4 flex items-center gap-2 border-l border-border/30 pl-4">
             {user ? (
               <>
-                <span className="text-xs text-muted-foreground truncate max-w-[140px]">{user.email}</span>
+                <Link
+                  to="/profile"
+                  className="flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                >
+                  <User className="h-3.5 w-3.5" /> Profile
+                </Link>
                 <button
                   onClick={handleSignOut}
                   className="flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
@@ -245,10 +250,13 @@ const MobileMenu = ({ open, onClose, pathname, downloaderLinks, authEnabled, use
         <div className="border-t border-border/30 px-6 py-4">
           {user ? (
             <div className="space-y-3">
-              <div className="flex items-center gap-3 rounded-lg bg-muted/30 px-4 py-3">
-                <User className="h-4 w-4 text-primary" />
-                <span className="truncate text-sm text-foreground">{user.email}</span>
-              </div>
+              <Link
+                to="/profile"
+                onClick={onClose}
+                className="flex w-full items-center justify-center gap-2 rounded-lg bg-primary/10 px-4 py-3 text-sm font-medium text-primary transition-colors hover:bg-primary/20"
+              >
+                <User className="h-4 w-4" /> My Profile
+              </Link>
               <button
                 onClick={() => { onSignOut(); onClose(); }}
                 className="flex w-full items-center justify-center gap-2 rounded-lg bg-muted/50 px-4 py-3 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
