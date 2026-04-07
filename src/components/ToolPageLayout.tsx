@@ -74,7 +74,7 @@ const ToolPageLayout = ({
   title,
   highlight,
   subtitle,
-  badge = "100% Free — No Sign-up",
+  badge = "✨ Free for All Members",
   gradientFrom = "from-primary",
   gradientTo = "to-orange-400",
   iconBgClass = "bg-primary/10",
@@ -177,7 +177,7 @@ const ToolPageLayout = ({
           className="mx-auto mt-8 flex w-full max-w-3xl flex-wrap items-center justify-center gap-6 px-4 md:gap-10"
         >
           {[
-            { label: "No Sign-up Required", icon: Shield },
+            { label: "Secure & Private", icon: Shield },
             { label: "100% Free Forever", icon: Star },
             { label: "Works on All Devices", icon: Globe },
           ].map((item, i) => (
