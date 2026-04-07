@@ -107,33 +107,54 @@ export type Database = {
       profiles: {
         Row: {
           avatar_url: string | null
+          banner_url: string | null
+          bio: string | null
           created_at: string
           email: string | null
+          experience: Json | null
           full_name: string | null
+          headline: string | null
           id: string
           is_suspended: boolean
+          location: string | null
+          skills: string[] | null
           suspended_reason: string | null
           updated_at: string
+          website: string | null
         }
         Insert: {
           avatar_url?: string | null
+          banner_url?: string | null
+          bio?: string | null
           created_at?: string
           email?: string | null
+          experience?: Json | null
           full_name?: string | null
+          headline?: string | null
           id: string
           is_suspended?: boolean
+          location?: string | null
+          skills?: string[] | null
           suspended_reason?: string | null
           updated_at?: string
+          website?: string | null
         }
         Update: {
           avatar_url?: string | null
+          banner_url?: string | null
+          bio?: string | null
           created_at?: string
           email?: string | null
+          experience?: Json | null
           full_name?: string | null
+          headline?: string | null
           id?: string
           is_suspended?: boolean
+          location?: string | null
+          skills?: string[] | null
           suspended_reason?: string | null
           updated_at?: string
+          website?: string | null
         }
         Relationships: []
       }
