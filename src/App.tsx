@@ -39,12 +39,14 @@ import SignIn from "./pages/SignIn.tsx";
 import SignUp from "./pages/SignUp.tsx";
 import AuthGuardLayout from "./components/AuthGuardLayout.tsx";
 import Profile from "./pages/Profile.tsx";
+import IntegrationsHead from "./components/IntegrationsHead.tsx";
 
 const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
+      <IntegrationsHead />
       <Toaster />
       <Sonner />
       <BrowserRouter>
