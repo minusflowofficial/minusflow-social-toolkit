@@ -43,12 +43,17 @@ const isAllowedDownloadHost = (hostname: string) => {
     hostname === "ytcontent.com" ||
     hostname.endsWith(".ytcontent.com") ||
     hostname === "googlevideo.com" ||
-    hostname.endsWith(".googlevideo.com")
+    hostname.endsWith(".googlevideo.com") ||
+    hostname === "process4.me" ||
+    hostname.endsWith(".process4.me")
   );
 };
 
 const requiresDownloadPreparation = (url: URL) => {
-  if (!(url.hostname === "ytcontent.com" || url.hostname.endsWith(".ytcontent.com"))) {
+  const isYtContent = url.hostname === "ytcontent.com" || url.hostname.endsWith(".ytcontent.com");
+  const isProcess4 = url.hostname === "process4.me" || url.hostname.endsWith(".process4.me");
+
+  if (!isYtContent && !isProcess4) {
     return false;
   }
 
