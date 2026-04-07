@@ -250,10 +250,13 @@ const MobileMenu = ({ open, onClose, pathname, downloaderLinks, authEnabled, use
         <div className="border-t border-border/30 px-6 py-4">
           {user ? (
             <div className="space-y-3">
-              <div className="flex items-center gap-3 rounded-lg bg-muted/30 px-4 py-3">
-                <User className="h-4 w-4 text-primary" />
-                <span className="truncate text-sm text-foreground">{user.email}</span>
-              </div>
+              <Link
+                to="/profile"
+                onClick={onClose}
+                className="flex w-full items-center justify-center gap-2 rounded-lg bg-primary/10 px-4 py-3 text-sm font-medium text-primary transition-colors hover:bg-primary/20"
+              >
+                <User className="h-4 w-4" /> My Profile
+              </Link>
               <button
                 onClick={() => { onSignOut(); onClose(); }}
                 className="flex w-full items-center justify-center gap-2 rounded-lg bg-muted/50 px-4 py-3 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
