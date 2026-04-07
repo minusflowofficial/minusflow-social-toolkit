@@ -2,10 +2,10 @@ import { supabase } from "@/integrations/supabase/client";
 
 // Generate a session ID for the current browser session
 const getSessionId = (): string => {
-  let sid = sessionStorage.getItem("ytfetch_session_id");
+  let sid = sessionStorage.getItem("mf_session_id");
   if (!sid) {
     sid = crypto.randomUUID();
-    sessionStorage.setItem("ytfetch_session_id", sid);
+    sessionStorage.setItem("mf_session_id", sid);
   }
   return sid;
 };

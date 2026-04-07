@@ -36,7 +36,7 @@ const features = [
 
 const steps = [
   { title: "Collect TikTok URLs", desc: "Open TikTok, go to each video you want, tap Share → Copy Link. Repeat for all videos." },
-  { title: "Paste All URLs", desc: "Come to YTFetch and paste all your TikTok URLs in the text area — one URL per line, up to 20." },
+  { title: "Paste All URLs", desc: "Come to MinusFlow ToolKit and paste all your TikTok URLs in the text area — one URL per line, up to 20." },
   { title: "Click Process All", desc: "Hit the 'Process All URLs' button. Each video is fetched and processed sequentially." },
   { title: "Download Each Video", desc: "As each video is processed, download it in MP4 (no watermark) or MP3 audio format." },
 ];
@@ -49,11 +49,11 @@ const faqs = [
   { q: "Why does processing take a while?", a: "We process videos sequentially with short delays between each to ensure maximum reliability. A batch of 20 videos typically takes about 30-60 seconds total." },
   { q: "Does it work with all TikTok URLs?", a: "We support standard TikTok video URLs (tiktok.com/@user/video/...), mobile share links, and shortened TikTok URLs. Only public videos can be downloaded." },
   { q: "Is there a file size limit?", a: "No file size limit on our end. You get the full video in its original quality. Long TikTok videos may result in larger file sizes." },
-  { q: "Can I use this on my phone?", a: "Absolutely! YTFetch Bulk Downloader works on all mobile browsers. Just paste your URLs and tap Process All — no app needed." },
+  { q: "Can I use this on my phone?", a: "Absolutely! MinusFlow ToolKit Bulk Downloader works on all mobile browsers. Just paste your URLs and tap Process All — no app needed." },
 ];
 
 const seoBlocks = [
-  { title: "Batch Download TikTok Videos — Up to 20 at Once", content: "YTFetch TikTok Bulk Downloader makes mass-downloading TikTok content effortless. Paste up to 20 video URLs, click once, and every video is processed automatically. All downloads are watermark-free and in HD quality." },
+  { title: "Batch Download TikTok Videos — Up to 20 at Once", content: "MinusFlow ToolKit TikTok Bulk Downloader makes mass-downloading TikTok content effortless. Paste up to 20 video URLs, click once, and every video is processed automatically. All downloads are watermark-free and in HD quality." },
   { title: "Perfect for Content Archiving & Offline Viewing", content: "Want to save a creator's entire collection? Bulk download makes it easy to archive content for offline viewing. All files are saved with the MinusFlow.net_ prefix for easy organization on your device." },
   { title: "Reliable Processing with Smart Rate Limiting", content: "Our intelligent sequential processing with built-in delays ensures every video in your batch is handled successfully. No failed downloads due to rate limiting — just reliable, consistent results every time." },
 ];

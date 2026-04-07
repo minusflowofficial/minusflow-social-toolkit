@@ -4,8 +4,8 @@ export interface DownloadRequest {
 }
 
 const BASE_DOWNLOAD_COUNT = 50;
-const DOWNLOAD_COUNT_STORAGE_KEY = "ytfetch-download-count";
-const DOWNLOAD_COUNT_EVENT = "ytfetch-download-count-updated";
+const DOWNLOAD_COUNT_STORAGE_KEY = "mf-download-count";
+const DOWNLOAD_COUNT_EVENT = "mf-download-count-updated";
 const DOWNLOAD_FRAME_CLEANUP_MS = 60_000;
 const DOWNLOAD_PREPARATION_RETRY_MS = 3_000;
 const DOWNLOAD_PREPARATION_MAX_ATTEMPTS = 120;

@@ -33,17 +33,17 @@ const steps = [
 
 const faqs = [
   { q: "What Instagram content can I download?", a: "You can download Instagram Reels, video posts, IGTV videos, and some carousel video content. The content must be from a public Instagram profile — private account content cannot be accessed." },
-  { q: "Do I need an Instagram account to use this?", a: "No! YTFetch Instagram Downloader works without any login or Instagram account. Just paste the URL of any public Instagram content and download it instantly." },
+  { q: "Do I need an Instagram account to use this?", a: "No! MinusFlow ToolKit Instagram Downloader works without any login or Instagram account. Just paste the URL of any public Instagram content and download it instantly." },
   { q: "What quality are the downloads?", a: "We download Instagram content in the highest quality available — typically 1080p for Reels and up to 4K for some video posts. The exact quality depends on what the creator originally uploaded." },
   { q: "Can I download Instagram Stories?", a: "Currently, our tool is optimized for Reels and video posts. Instagram Stories have different access methods and are not supported at this time. We're exploring adding this feature in the future." },
   { q: "Why does the download sometimes fail?", a: "Common reasons include: the account is private, the URL is incorrect, or the content has been deleted. Make sure you're copying the correct URL from a public Instagram profile." },
   { q: "Can I download Instagram photos?", a: "Our tool is optimized for video content (Reels, video posts). For photo downloads, right-clicking and 'Save Image' in your browser usually works for public photos." },
   { q: "Are hashtags preserved in the filename?", a: "Yes! When available, we include relevant hashtags in the downloaded filename along with the post title. This makes it easy to organize and find your downloaded content later." },
-  { q: "Is this tool safe to use?", a: "Absolutely. YTFetch is a web-based tool that never stores your data, URLs, or downloaded files. We don't require any permissions, logins, or personal information. Your privacy is guaranteed." },
+  { q: "Is this tool safe to use?", a: "Absolutely. MinusFlow ToolKit is a web-based tool that never stores your data, URLs, or downloaded files. We don't require any permissions, logins, or personal information. Your privacy is guaranteed." },
 ];
 
 const seoBlocks = [
-  { title: "Free Instagram Reels Downloader — HD Quality", content: "YTFetch Instagram Downloader lets you save Instagram Reels and video posts in high definition quality. No Instagram login needed, no app to install — just paste the URL and download instantly. Works with all public Instagram content." },
+  { title: "Free Instagram Reels Downloader — HD Quality", content: "MinusFlow ToolKit Instagram Downloader lets you save Instagram Reels and video posts in high definition quality. No Instagram login needed, no app to install — just paste the URL and download instantly. Works with all public Instagram content." },
   { title: "Save Instagram Content for Offline Viewing", content: "Want to watch your favorite Reels offline? Our tool downloads the original video file to your device. Watch anytime without internet, save mobile data, and build your personal content library." },
   { title: "Multiple Quality Options Available", content: "When available, our tool offers multiple quality levels for each download. Choose between HD and SD based on your storage needs and viewing preferences. All downloads preserve the original quality without re-encoding." },
 ];

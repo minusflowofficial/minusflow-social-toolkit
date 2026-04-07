@@ -40,7 +40,7 @@ const features = [
 
 const steps = [
   { title: "Open TikTok Video", desc: "Find the TikTok video you want to download. Tap the Share button and then 'Copy Link' to get the video URL." },
-  { title: "Paste the URL", desc: "Come back to YTFetch and paste the copied TikTok URL into the input field above." },
+  { title: "Paste the URL", desc: "Come back to MinusFlow ToolKit and paste the copied TikTok URL into the input field above." },
   { title: "Click Download", desc: "Hit the Download button and wait a few seconds while we process the video." },
   { title: "Choose Format & Save", desc: "Select MP4 (without watermark), MP4 (with watermark), or MP3 audio — then save to your device." },
 ];
@@ -51,13 +51,13 @@ const faqs = [
   { q: "Does it work with private TikTok videos?", a: "No, our tool can only download public TikTok videos. Private videos and videos with restricted sharing settings are not accessible through any third-party downloader." },
   { q: "Is downloading TikTok videos legal?", a: "Downloading TikTok videos for personal, offline viewing is generally acceptable. However, always respect the original creator's rights — don't redistribute, re-upload, or use downloaded content for commercial purposes without permission." },
   { q: "Why does my download sometimes fail?", a: "This can happen if the TikTok URL is incorrect, the video was deleted, or TikTok temporarily blocks access. Try refreshing the page and pasting the URL again. If the issue persists, the video may no longer be available." },
-  { q: "Do I need to install a TikTok downloader app?", a: "No! YTFetch is a web-based tool that works directly in your browser. No app downloads, extensions, or installations needed. Just visit our website, paste a link, and download. Works on any device." },
+  { q: "Do I need to install a TikTok downloader app?", a: "No! MinusFlow ToolKit is a web-based tool that works directly in your browser. No app downloads, extensions, or installations needed. Just visit our website, paste a link, and download. Works on any device." },
   { q: "What video quality do I get?", a: "We download TikTok videos in the highest quality available — typically 1080p or 720p HD, depending on the original upload quality. The watermark-free version maintains the same quality as the original." },
   { q: "Can I download TikTok slideshows/photo videos?", a: "TikTok slideshow-style videos (photo carousels with music) are downloaded as video files (MP4), preserving the slideshow animation and audio exactly as they appear on TikTok." },
 ];
 
 const seoBlocks = [
-  { title: "Free TikTok Video Downloader — No Watermark, HD Quality", content: "YTFetch TikTok Downloader saves any public TikTok video without the watermark in full HD quality. Download in MP4 for video or MP3 for audio-only — perfect for saving trending content, funny clips, tutorials, and music. No sign-up, no app, completely free." },
+  { title: "Free TikTok Video Downloader — No Watermark, HD Quality", content: "MinusFlow ToolKit TikTok Downloader saves any public TikTok video without the watermark in full HD quality. Download in MP4 for video or MP3 for audio-only — perfect for saving trending content, funny clips, tutorials, and music. No sign-up, no app, completely free." },
   { title: "Save TikTok Videos on Any Device", content: "Our TikTok downloader works on iPhones, Android phones, iPads, laptops, and desktop computers. No app installation required — just use your web browser. Compatible with Chrome, Safari, Firefox, Edge, and all modern browsers." },
   { title: "Extract Audio from TikTok Videos", content: "Want just the sound? Our MP3 extraction feature lets you save audio from any TikTok video. Perfect for trending sounds, music clips, podcasts, ASMR content, and more. High-quality audio files ready for offline listening." },
 ];

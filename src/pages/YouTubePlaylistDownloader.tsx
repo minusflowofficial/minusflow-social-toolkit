@@ -30,8 +30,8 @@ const faqs = [
 ];
 
 const seoBlocks = [
-  { title: "Download Complete YouTube Playlists for Free", content: "YTFetch Playlist Downloader extracts all videos from any YouTube playlist and lets you download them in your preferred format and quality. Perfect for saving entire course series, music compilations, lecture collections, or video archives. No sign-up required — just paste and download." },
-  { title: "Ideal for Students, Educators & Content Archivists", content: "Whether you're a student saving an online course for offline study, an educator building a resource library, or a music lover archiving your favorite albums — YTFetch Playlist Downloader handles it all. Download entire playlists with individual format control for each video." },
+  { title: "Download Complete YouTube Playlists for Free", content: "MinusFlow ToolKit Playlist Downloader extracts all videos from any YouTube playlist and lets you download them in your preferred format and quality. Perfect for saving entire course series, music compilations, lecture collections, or video archives. No sign-up required — just paste and download." },
+  { title: "Ideal for Students, Educators & Content Archivists", content: "Whether you're a student saving an online course for offline study, an educator building a resource library, or a music lover archiving your favorite albums — MinusFlow ToolKit Playlist Downloader handles it all. Download entire playlists with individual format control for each video." },
   { title: "All URL Formats Supported", content: "We accept standard playlist URLs (youtube.com/playlist?list=...), video URLs with playlist parameters, channel upload pages, and mix playlists. If YouTube recognizes it as a playlist, so do we. Just paste and extract." },
 ];
 
