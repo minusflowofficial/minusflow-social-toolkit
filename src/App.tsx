@@ -68,11 +68,11 @@ const App = () => (
           <Route path="/transcript-history" element={<AuthGuardLayout><TranscriptHistory /></AuthGuardLayout>} />
           <Route path="/thumbnail" element={<AuthGuardLayout><ThumbnailDownloader /></AuthGuardLayout>} />
 
-          {/* Legacy routes → redirect to new split pages */}
-          <Route path="/tiktok" element={<TikTokDownloader />} />
+          {/* Legacy routes */}
+          <Route path="/tiktok" element={<AuthGuardLayout><TikTokDownloader /></AuthGuardLayout>} />
           <Route path="/signin" element={<SignIn />} />
           <Route path="/signup" element={<SignUp />} />
-          <Route path="/instagram" element={<InstagramDownloader />} />
+          <Route path="/instagram" element={<AuthGuardLayout><InstagramDownloader /></AuthGuardLayout>} />
 
           {/* Admin routes */}
           <Route path="/admin/login" element={<AdminLogin />} />
