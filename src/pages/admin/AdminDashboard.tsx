@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import {
   Users, Wrench, Eye, AlertTriangle, CheckCircle, ShieldAlert, ShieldCheck,
-  Shield, User, Ban, Unlock, Trash2, Monitor, Search, Loader2, RefreshCw
+  Shield, User, Ban, Unlock, Trash2, Monitor, Search, Loader2, RefreshCw,
+  ChevronDown, CircleCheck, AlertOctagon, Bug
 } from "lucide-react";
 import { useTools } from "@/hooks/useTools";
 import { useSiteSettings } from "@/hooks/useSiteSettings";
