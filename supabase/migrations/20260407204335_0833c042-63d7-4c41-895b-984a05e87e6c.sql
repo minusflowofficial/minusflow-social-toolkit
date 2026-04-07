@@ -1,0 +1,1 @@
+ALTER TABLE public.user_sessions ADD CONSTRAINT user_sessions_session_token_key UNIQUE (session_token);

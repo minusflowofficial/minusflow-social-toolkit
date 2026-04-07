@@ -1,13 +1,14 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { Link, useNavigate } from "react-router-dom";
-import { UserPlus, Eye, EyeOff, Loader2, ArrowRight, Check } from "lucide-react";
+import { UserPlus, Eye, EyeOff, Loader2, ArrowRight, Check, AlertTriangle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import ParticleBackground from "@/components/ParticleBackground";
 import logoImg from "@/assets/logo.png";
+import { isDisposableEmail } from "@/lib/disposable-emails";
 
 const passwordRules = [
   { label: "At least 8 characters", test: (p: string) => p.length >= 8 },
@@ -20,15 +21,33 @@ const SignUp = () => {
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [emailError, setEmailError] = useState("");
 
   const allValid = passwordRules.every((r) => r.test(password));
+  const passwordsMatch = password === confirmPassword && confirmPassword.length > 0;
+
+  const validateEmail = (val: string) => {
+    setEmail(val);
+    if (val && isDisposableEmail(val)) {
+      setEmailError("Temporary/disposable emails are not allowed. Please use a real email address.");
+    } else {
+      setEmailError("");
+    }
+  };
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email.trim() || !password || !allValid) return;
+    if (!email.trim() || !password || !allValid || !passwordsMatch || !fullName.trim()) return;
+
+    if (isDisposableEmail(email.trim())) {
+      toast.error("Temporary/disposable emails are not allowed.");
+      return;
+    }
 
     setLoading(true);
     const { error } = await supabase.auth.signUp({
@@ -81,7 +100,7 @@ const SignUp = () => {
   }
 
   return (
-    <div className="relative flex min-h-screen items-center justify-center bg-background px-4">
+    <div className="relative flex min-h-screen items-center justify-center bg-background px-4 py-8">
       <ParticleBackground />
 
       <motion.div
@@ -95,7 +114,7 @@ const SignUp = () => {
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1, duration: 0.5 }}
-          className="mb-8 flex justify-center"
+          className="mb-6 flex justify-center"
         >
           <Link to="/">
             <img src={logoImg} alt="MinusFlow ToolKit" className="h-10" />
@@ -107,14 +126,14 @@ const SignUp = () => {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.2, duration: 0.5 }}
-          className="glass rounded-2xl border border-border/30 p-8 shadow-2xl backdrop-blur-xl"
+          className="glass rounded-2xl border border-border/30 p-6 shadow-2xl backdrop-blur-xl sm:p-8"
         >
-          <div className="mb-6 text-center">
+          <div className="mb-5 text-center">
             <motion.div
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
               transition={{ delay: 0.3, type: "spring", stiffness: 200 }}
-              className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10"
+              className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10"
             >
               <UserPlus className="h-7 w-7 text-primary" />
             </motion.div>
@@ -122,22 +141,25 @@ const SignUp = () => {
             <p className="mt-1 text-sm text-muted-foreground">Join MinusFlow ToolKit for free</p>
           </div>
 
-          <form onSubmit={handleSignUp} className="space-y-4">
+          <form onSubmit={handleSignUp} className="space-y-3.5">
+            {/* Full Name */}
             <motion.div
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.35, duration: 0.4 }}
             >
-              <label className="mb-1.5 block text-xs font-medium text-muted-foreground">Full Name</label>
+              <label className="mb-1.5 block text-xs font-medium text-muted-foreground">Full Name *</label>
               <Input
                 type="text"
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
                 placeholder="John Doe"
                 className="h-11 bg-muted/30 transition-all focus:bg-muted/50"
+                required
               />
             </motion.div>
 
+            {/* Email */}
             <motion.div
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
@@ -147,13 +169,24 @@ const SignUp = () => {
               <Input
                 type="email"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={(e) => validateEmail(e.target.value)}
                 placeholder="you@example.com"
-                className="h-11 bg-muted/30 transition-all focus:bg-muted/50"
+                className={`h-11 bg-muted/30 transition-all focus:bg-muted/50 ${emailError ? "border-destructive" : ""}`}
                 required
               />
+              {emailError && (
+                <motion.p
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: "auto" }}
+                  className="mt-1.5 flex items-center gap-1.5 text-xs text-destructive"
+                >
+                  <AlertTriangle className="h-3 w-3" />
+                  {emailError}
+                </motion.p>
+              )}
             </motion.div>
 
+            {/* Password */}
             <motion.div
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
@@ -178,7 +211,6 @@ const SignUp = () => {
                 </button>
               </div>
 
-              {/* Password strength */}
               {password && (
                 <motion.div
                   initial={{ opacity: 0, height: 0 }}
@@ -197,6 +229,50 @@ const SignUp = () => {
               )}
             </motion.div>
 
+            {/* Confirm Password */}
+            <motion.div
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.5, duration: 0.4 }}
+            >
+              <label className="mb-1.5 block text-xs font-medium text-muted-foreground">Confirm Password *</label>
+              <div className="relative">
+                <Input
+                  type={showConfirm ? "text" : "password"}
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  placeholder="••••••••"
+                  className={`h-11 bg-muted/30 pr-10 transition-all focus:bg-muted/50 ${confirmPassword && !passwordsMatch ? "border-destructive" : confirmPassword && passwordsMatch ? "border-green-500" : ""}`}
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirm(!showConfirm)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                >
+                  {showConfirm ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
+              {confirmPassword && !passwordsMatch && (
+                <motion.p
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="mt-1 text-[11px] text-destructive"
+                >
+                  Passwords do not match
+                </motion.p>
+              )}
+              {confirmPassword && passwordsMatch && (
+                <motion.p
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="mt-1 text-[11px] text-green-500"
+                >
+                  ✓ Passwords match
+                </motion.p>
+              )}
+            </motion.div>
+
             <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
@@ -204,7 +280,7 @@ const SignUp = () => {
             >
               <Button
                 type="submit"
-                disabled={loading || !allValid}
+                disabled={loading || !allValid || !passwordsMatch || !!emailError || !fullName.trim()}
                 className="h-11 w-full gap-2 text-sm font-semibold"
               >
                 {loading ? (
@@ -222,7 +298,7 @@ const SignUp = () => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.65, duration: 0.4 }}
-            className="mt-6 text-center"
+            className="mt-5 text-center"
           >
             <p className="text-sm text-muted-foreground">
               Already have an account?{" "}
@@ -233,7 +309,6 @@ const SignUp = () => {
           </motion.div>
         </motion.div>
 
-        {/* Back to home */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}

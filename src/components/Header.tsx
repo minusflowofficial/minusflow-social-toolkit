@@ -77,7 +77,7 @@ const Header = () => {
   const { data: settings } = useSiteSettings();
   const [user, setUser] = useState<any>(null);
 
-  const authEnabled = settings?.user_auth?.enabled ?? false;
+  const authEnabled = true; // Always show auth buttons since tools require login
 
   useEffect(() => {
     trackPageView(location.pathname);
