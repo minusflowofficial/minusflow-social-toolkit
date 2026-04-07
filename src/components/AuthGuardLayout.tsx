@@ -1,5 +1,4 @@
-import { ReactNode, useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { ReactNode } from "react";
 import AuthGuard from "./AuthGuard";
 import SuspendedOverlay from "./SuspendedOverlay";
 import { useSessionTracker } from "@/hooks/useSessionTracker";
