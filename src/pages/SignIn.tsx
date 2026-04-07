@@ -21,16 +21,38 @@ const SignIn = () => {
     if (!email.trim() || !password) return;
 
     setLoading(true);
-    const { error } = await supabase.auth.signInWithPassword({
+    const { data, error } = await supabase.auth.signInWithPassword({
       email: email.trim().toLowerCase(),
       password,
     });
 
     if (error) {
-      toast.error(error.message);
+      if (error.message.toLowerCase().includes("email not confirmed")) {
+        toast.error("Please verify your email address first. Check your inbox for the verification link.");
+      } else {
+        toast.error(error.message);
+      }
     } else {
-      toast.success("Welcome back!");
-      navigate("/");
+      // Double-check: if email_confirmed_at is null, sign out and block
+      if (!data.user?.email_confirmed_at) {
+        await supabase.auth.signOut();
+        toast.error("Please verify your email address first. Check your inbox for the verification link.");
+      } else {
+        // Check if profile is suspended
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("is_suspended")
+          .eq("id", data.user.id)
+          .maybeSingle();
+
+        if (profile?.is_suspended) {
+          await supabase.auth.signOut();
+          toast.error("Your account has been suspended. Please contact admin via WhatsApp.");
+        } else {
+          toast.success("Welcome back!");
+          navigate("/");
+        }
+      }
     }
     setLoading(false);
   };
