@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import {
   Users, Wrench, Eye, AlertTriangle, CheckCircle, ShieldAlert, ShieldCheck,
-  Shield, User, Ban, Unlock, Trash2, Monitor, Search, Loader2, RefreshCw
+  Shield, User, Ban, Unlock, Trash2, Monitor, Search, Loader2, RefreshCw,
+  ChevronDown, CircleCheck, AlertOctagon, Bug
 } from "lucide-react";
 import { useTools } from "@/hooks/useTools";
 import { useSiteSettings } from "@/hooks/useSiteSettings";
@@ -43,6 +44,73 @@ const StatCard = ({ icon: Icon, label, value, color }: { icon: any; label: strin
     </div>
   </motion.div>
 );
+
+const statusOptions = [
+  { value: "active", label: "Active", icon: CircleCheck, color: "text-green-500", bg: "bg-green-500/10" },
+  { value: "suspended", label: "Suspended", icon: Ban, color: "text-destructive", bg: "bg-destructive/10" },
+  { value: "spammer", label: "Spammer", icon: Bug, color: "text-orange-500", bg: "bg-orange-500/10" },
+] as const;
+
+const UserStatusDropdown = ({
+  currentStatus,
+  onStatusChange,
+}: {
+  currentStatus: string;
+  onStatusChange: (status: string) => void;
+}) => {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  const current = statusOptions.find((s) => s.value === currentStatus) || statusOptions[0];
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        onClick={() => setOpen(!open)}
+        className={`flex h-8 items-center gap-1.5 rounded-lg border border-border/50 px-3 text-xs font-medium transition-colors hover:bg-muted/50 ${current.color}`}
+      >
+        <current.icon className="h-3.5 w-3.5" />
+        {current.label}
+        <ChevronDown className={`h-3 w-3 transition-transform ${open ? "rotate-180" : ""}`} />
+      </button>
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            initial={{ opacity: 0, y: -4, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -4, scale: 0.95 }}
+            transition={{ duration: 0.15 }}
+            className="absolute right-0 top-full z-50 mt-1 w-40 overflow-hidden rounded-lg border border-border/50 bg-card shadow-xl"
+          >
+            {statusOptions.map((opt) => (
+              <button
+                key={opt.value}
+                onClick={() => {
+                  if (opt.value !== currentStatus) onStatusChange(opt.value);
+                  setOpen(false);
+                }}
+                className={`flex w-full items-center gap-2 px-3 py-2 text-xs font-medium transition-colors hover:bg-muted/50 ${
+                  opt.value === currentStatus ? `${opt.bg} ${opt.color}` : "text-muted-foreground"
+                }`}
+              >
+                <opt.icon className="h-3.5 w-3.5" />
+                {opt.label}
+                {opt.value === currentStatus && <CheckCircle className="ml-auto h-3 w-3" />}
+              </button>
+            ))}
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+};
 
 const AdminDashboard = () => {
   const { data: tools } = useTools();
@@ -270,31 +338,20 @@ const AdminDashboard = () => {
                       </Button>
                     )}
 
-                    {/* Suspend / Unsuspend */}
+                    {/* Status Dropdown */}
                     {u.id !== user?.id && (
-                      u.is_suspended ? (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => unsuspendUser.mutate(u.id)}
-                          className="h-8 gap-1.5 border-green-500/30 text-xs text-green-500 hover:bg-green-500/10"
-                        >
-                          <Unlock className="h-3.5 w-3.5" /> Unsuspend
-                        </Button>
-                      ) : (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => {
-                            if (confirm(`Suspend ${u.email}?`)) {
-                              suspendUser.mutate({ user_id: u.id, reason: "Manually suspended by admin" });
-                            }
-                          }}
-                          className="h-8 gap-1.5 border-destructive/30 text-xs text-destructive hover:bg-destructive/10"
-                        >
-                          <Ban className="h-3.5 w-3.5" /> Suspend
-                        </Button>
-                      )
+                      <UserStatusDropdown
+                        currentStatus={u.suspended_reason === "Marked as spammer by admin" ? "spammer" : u.is_suspended ? "suspended" : "active"}
+                        onStatusChange={(status) => {
+                          if (status === "active") {
+                            unsuspendUser.mutate(u.id);
+                          } else if (status === "suspended") {
+                            suspendUser.mutate({ user_id: u.id, reason: "Manually suspended by admin" });
+                          } else if (status === "spammer") {
+                            suspendUser.mutate({ user_id: u.id, reason: "Marked as spammer by admin" });
+                          }
+                        }}
+                      />
                     )}
                   </div>
                 </motion.div>
