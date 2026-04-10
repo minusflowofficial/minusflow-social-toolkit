@@ -114,15 +114,9 @@ export function useSessionTracker() {
       .eq("user_id", userId)
       .eq("is_active", true);
 
+    // Only warn, do not auto-suspend for too many devices
     if (count && count > maxDevices) {
-      setBlocked(true);
-      await supabase
-        .from("profiles")
-        .update({
-          is_suspended: true,
-          suspended_reason: `Too many active sessions (${count}/${maxDevices}). Account automatically suspended.`,
-        })
-        .eq("id", userId);
+      console.warn(`User has ${count}/${maxDevices} active sessions — warning only, no suspension.`);
     }
 
     setChecking(false);

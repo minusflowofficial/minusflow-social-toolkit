@@ -65,8 +65,29 @@ const Profile = () => {
         .from("profiles")
         .select("*")
         .eq("id", userId!)
-        .single();
+        .maybeSingle();
       if (error) throw error;
+      // If no profile row exists yet, return a fallback from session metadata
+      if (!data) {
+        return {
+          id: userId!,
+          full_name: session?.user?.user_metadata?.full_name || "",
+          email: session?.user?.email || "",
+          avatar_url: "",
+          banner_url: "",
+          bio: "",
+          headline: "",
+          location: "",
+          website: "",
+          skills: [],
+          experience: [],
+          is_suspended: false,
+          suspended_reason: "",
+          created_at: session?.user?.created_at || new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          max_devices: 3,
+        };
+      }
       return data;
     },
     enabled: !!userId,
@@ -354,7 +375,7 @@ const Profile = () => {
               <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-yellow-500" />
               <div>
                 <p className="text-sm font-semibold text-yellow-500">High Bounce Rate Warning</p>
-                <p className="text-xs text-muted-foreground">Your bounce rate is {bounceRate}% (threshold: 20%). Engage more to avoid suspension.</p>
+                <p className="text-xs text-muted-foreground">Your bounce rate is {bounceRate}% (threshold: 20%). This is only a warning — no action will be taken against your account.</p>
               </div>
             </motion.div>
           )}

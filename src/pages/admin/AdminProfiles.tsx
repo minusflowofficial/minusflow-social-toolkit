@@ -242,7 +242,7 @@ const AdminProfiles = () => {
     const profileExperience: ExperienceItem[] = (() => { try { return fp?.experience || []; } catch { return []; } })();
     const bounceRate = userPageViews?.bounceRate ?? 0;
 
-    if (fp && bioVal === "" && !editBio && (fp.bio || "") !== bioVal) {
+    if (fp && !editBio && !editHeadline && !editLocation && !editWebsite && !editSkills && !editExperience && !editName && !editDevices) {
       syncEditState();
     }
 
@@ -273,9 +273,9 @@ const AdminProfiles = () => {
             <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-end">
               <div className="relative -mt-12 group">
                 <div className="h-20 w-20 overflow-hidden rounded-2xl border-4 border-card bg-muted shadow-xl">
-                  {selectedUser.avatar_url ? (
-                    <img src={selectedUser.avatar_url} alt="" className="h-full w-full object-cover" />
-                  ) : (
+                   {(fp?.avatar_url || selectedUser.avatar_url) ? (
+                     <img src={fp?.avatar_url || selectedUser.avatar_url} alt="" className="h-full w-full object-cover" />
+                   ) : (
                     <div className="flex h-full w-full items-center justify-center bg-primary/10"><User className="h-8 w-8 text-primary" /></div>
                   )}
                   {uploadingAvatar && (
