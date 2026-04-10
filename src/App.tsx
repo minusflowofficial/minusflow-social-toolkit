@@ -35,6 +35,8 @@ import TikTokSingleDownloader from "./pages/TikTokSingleDownloader.tsx";
 import TikTokBulkDownloader from "./pages/TikTokBulkDownloader.tsx";
 import InstagramSingleDownloader from "./pages/InstagramSingleDownloader.tsx";
 import InstagramBulkDownloader from "./pages/InstagramBulkDownloader.tsx";
+import FacebookSingleDownloader from "./pages/FacebookSingleDownloader.tsx";
+import FacebookBulkDownloader from "./pages/FacebookBulkDownloader.tsx";
 import SignIn from "./pages/SignIn.tsx";
 import SignUp from "./pages/SignUp.tsx";
 import AuthGuardLayout from "./components/AuthGuardLayout.tsx";
@@ -67,6 +69,8 @@ const App = () => (
           <Route path="/tiktok-bulk-downloader" element={<AuthGuardLayout><TikTokBulkDownloader /></AuthGuardLayout>} />
           <Route path="/instagram-downloader" element={<AuthGuardLayout><InstagramSingleDownloader /></AuthGuardLayout>} />
           <Route path="/instagram-bulk-downloader" element={<AuthGuardLayout><InstagramBulkDownloader /></AuthGuardLayout>} />
+          <Route path="/facebook-downloader" element={<AuthGuardLayout><FacebookSingleDownloader /></AuthGuardLayout>} />
+          <Route path="/facebook-bulk-downloader" element={<AuthGuardLayout><FacebookBulkDownloader /></AuthGuardLayout>} />
           <Route path="/transcript" element={<AuthGuardLayout><TranscriptHome /></AuthGuardLayout>} />
           <Route path="/transcript/:videoId" element={<AuthGuardLayout><TranscriptView /></AuthGuardLayout>} />
           <Route path="/transcript-history" element={<AuthGuardLayout><TranscriptHistory /></AuthGuardLayout>} />
