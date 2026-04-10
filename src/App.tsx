@@ -69,6 +69,8 @@ const App = () => (
           <Route path="/tiktok-bulk-downloader" element={<AuthGuardLayout><TikTokBulkDownloader /></AuthGuardLayout>} />
           <Route path="/instagram-downloader" element={<AuthGuardLayout><InstagramSingleDownloader /></AuthGuardLayout>} />
           <Route path="/instagram-bulk-downloader" element={<AuthGuardLayout><InstagramBulkDownloader /></AuthGuardLayout>} />
+          <Route path="/facebook-downloader" element={<AuthGuardLayout><FacebookSingleDownloader /></AuthGuardLayout>} />
+          <Route path="/facebook-bulk-downloader" element={<AuthGuardLayout><FacebookBulkDownloader /></AuthGuardLayout>} />
           <Route path="/transcript" element={<AuthGuardLayout><TranscriptHome /></AuthGuardLayout>} />
           <Route path="/transcript/:videoId" element={<AuthGuardLayout><TranscriptView /></AuthGuardLayout>} />
           <Route path="/transcript-history" element={<AuthGuardLayout><TranscriptHistory /></AuthGuardLayout>} />
