@@ -35,6 +35,8 @@ import TikTokSingleDownloader from "./pages/TikTokSingleDownloader.tsx";
 import TikTokBulkDownloader from "./pages/TikTokBulkDownloader.tsx";
 import InstagramSingleDownloader from "./pages/InstagramSingleDownloader.tsx";
 import InstagramBulkDownloader from "./pages/InstagramBulkDownloader.tsx";
+import FacebookSingleDownloader from "./pages/FacebookSingleDownloader.tsx";
+import FacebookBulkDownloader from "./pages/FacebookBulkDownloader.tsx";
 import SignIn from "./pages/SignIn.tsx";
 import SignUp from "./pages/SignUp.tsx";
 import AuthGuardLayout from "./components/AuthGuardLayout.tsx";
