@@ -242,7 +242,7 @@ const AdminProfiles = () => {
     const profileExperience: ExperienceItem[] = (() => { try { return fp?.experience || []; } catch { return []; } })();
     const bounceRate = userPageViews?.bounceRate ?? 0;
 
-    if (fp && bioVal === "" && !editBio && (fp.bio || "") !== bioVal) {
+    if (fp && !editBio && !editHeadline && !editLocation && !editWebsite && !editSkills && !editExperience && !editName && !editDevices) {
       syncEditState();
     }
 
