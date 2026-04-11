@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import ToolPageLayout from "@/components/ToolPageLayout";
 
 const FUNCTION_BASE = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/facebook-download`;
+const proxyThumb = (url: string) => url ? `${FUNCTION_BASE}?url=${encodeURIComponent(url)}&filename=thumb.jpg` : "";
 
 interface DownloadLink { quality: string; url: string; format: string; }
 interface FBResult { success: boolean; title?: string; thumbnail?: string; download_links?: DownloadLink[]; error?: string; }
