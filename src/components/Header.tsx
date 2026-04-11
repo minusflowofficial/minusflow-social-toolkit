@@ -1,7 +1,7 @@
 import { motion } from "framer-motion";
 import { Menu, X, ChevronDown } from "lucide-react";
 import logoImg from "@/assets/logo.png";
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { useState, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { usePublicTools } from "@/hooks/useTools";
@@ -71,7 +71,7 @@ const DropdownMenu = ({ label, links, pathname }: { label: string; links: { to: 
 
 const Header = () => {
   const location = useLocation();
-  const navigate = useNavigate();
+  
   const [mobileOpen, setMobileOpen] = useState(false);
   const { data: tools } = usePublicTools();
   const { data: settings } = useSiteSettings();
