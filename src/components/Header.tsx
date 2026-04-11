@@ -79,16 +79,23 @@ const Header = () => {
     trackPageView(location.pathname);
   }, [location.pathname]);
 
-  const downloaderLinks = tools?.map((t) => ({
-    to: t.route,
-    label: t.name,
-  })) ?? [
-    { to: "/", label: "YouTube Downloader" },
-    { to: "/tiktok", label: "TikTok Downloader" },
-    { to: "/instagram", label: "Instagram Downloader" },
-    { to: "/transcript", label: "YouTube Transcript" },
-    { to: "/thumbnail", label: "Thumbnail Downloader" },
-  ];
+  const downloaderLinks = tools?.length
+    ? tools.map((t) => ({ to: t.route, label: t.name }))
+    : [
+        { to: "/youtube-downloader", label: "YouTube Downloader" },
+        { to: "/youtube-bulk-downloader", label: "YouTube Bulk Downloader" },
+        { to: "/youtube-playlist-downloader", label: "Playlist Downloader" },
+        { to: "/tiktok-downloader", label: "TikTok Downloader" },
+        { to: "/tiktok-bulk-downloader", label: "TikTok Bulk Downloader" },
+        { to: "/instagram-downloader", label: "Instagram Downloader" },
+        { to: "/instagram-bulk-downloader", label: "Instagram Bulk Downloader" },
+        { to: "/facebook-downloader", label: "Facebook Downloader" },
+        { to: "/facebook-bulk-downloader", label: "Facebook Bulk Downloader" },
+        { to: "/douyin-downloader", label: "Douyin Downloader" },
+        { to: "/douyin-bulk-downloader", label: "Douyin Bulk Downloader" },
+        { to: "/transcript", label: "YouTube Transcript" },
+        { to: "/thumbnail", label: "Thumbnail Downloader" },
+      ];
 
   return (
     <motion.header
