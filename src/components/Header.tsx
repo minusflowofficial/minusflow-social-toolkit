@@ -64,16 +64,16 @@ const fallbackGroups: PlatformGroup[] = [
 ];
 
 function groupToolsByPlatform(tools: { name: string; route: string }[]): PlatformGroup[] {
-  const platformMap: Record<string, { emoji: string; order: number }> = {
-    youtube: { emoji: "🔴", order: 0 },
-    tiktok: { emoji: "🎵", order: 1 },
-    instagram: { emoji: "📸", order: 2 },
-    facebook: { emoji: "🔵", order: 3 },
-    douyin: { emoji: "🇨🇳", order: 4 },
+  const platformMap: Record<string, { order: number }> = {
+    youtube: { order: 0 },
+    tiktok: { order: 1 },
+    instagram: { order: 2 },
+    facebook: { order: 3 },
+    douyin: { order: 4 },
   };
 
   const groups: Record<string, PlatformGroup> = {};
-  const other: PlatformGroup = { platform: "Other Tools", emoji: "🛠️", links: [] };
+  const other: PlatformGroup = { platform: "Other Tools", links: [] };
 
   for (const tool of tools) {
     const slug = tool.route.toLowerCase();
@@ -84,14 +84,10 @@ function groupToolsByPlatform(tools: { name: string; route: string }[]): Platfor
           const displayName = key.charAt(0).toUpperCase() + key.slice(1);
           groups[key] = {
             platform: displayName === "Youtube" ? "YouTube" : displayName === "Tiktok" ? "TikTok" : displayName,
-            emoji: meta.emoji,
             links: [],
           };
         }
-        const shortLabel = tool.name
-          .replace(/youtube\s*/i, "").replace(/tiktok\s*/i, "").replace(/instagram\s*/i, "")
-          .replace(/facebook\s*/i, "").replace(/douyin\s*/i, "").trim() || tool.name;
-        groups[key].links.push({ to: tool.route, label: shortLabel });
+        groups[key].links.push({ to: tool.route, label: tool.name });
         matched = true;
         break;
       }
@@ -131,7 +127,6 @@ const PlatformDropdown = ({ group, pathname }: { group: PlatformGroup; pathname:
           isActive ? "text-primary" : "text-muted-foreground hover:text-foreground"
         }`}
       >
-        <span className="text-base leading-none">{group.emoji}</span>
         {group.platform}
         <ChevronDown className={`h-3 w-3 transition-transform duration-200 ${open ? "rotate-180" : ""}`} />
       </button>
@@ -290,7 +285,7 @@ const MobileMenu = ({ open, onClose, pathname, groups }: { open: boolean; onClos
               onClick={() => toggleGroup(group.platform)}
               className="flex w-full items-center justify-between rounded-lg px-4 py-3 text-sm font-semibold text-foreground hover:bg-white/5 transition-colors"
             >
-              <span>{group.emoji} {group.platform}</span>
+              <span>{group.platform}</span>
               <ChevronRight className={`h-4 w-4 text-muted-foreground transition-transform duration-200 ${expandedGroup === group.platform ? "rotate-90" : ""}`} />
             </button>
             {expandedGroup === group.platform &&
