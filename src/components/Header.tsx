@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { Menu, X, ChevronDown } from "lucide-react";
+import { Menu, X, ChevronDown, ChevronRight } from "lucide-react";
 import logoImg from "@/assets/logo.png";
 import { Link, useLocation } from "react-router-dom";
 import { useState, useRef, useEffect } from "react";
@@ -7,7 +7,6 @@ import { createPortal } from "react-dom";
 import { usePublicTools } from "@/hooks/useTools";
 import { trackPageView } from "@/lib/analytics";
 import { useSiteSettings } from "@/hooks/useSiteSettings";
-
 
 const pageLinks = [
   { to: "/about", label: "About Us" },
@@ -18,7 +17,164 @@ const pageLinks = [
   { to: "/disclaimer", label: "Disclaimer" },
 ];
 
-const DropdownMenu = ({ label, links, pathname }: { label: string; links: { to: string; label: string }[]; pathname: string }) => {
+interface PlatformGroup {
+  platform: string;
+  emoji: string;
+  links: { to: string; label: string }[];
+}
+
+const fallbackGroups: PlatformGroup[] = [
+  {
+    platform: "YouTube", emoji: "🔴",
+    links: [
+      { to: "/youtube-downloader", label: "Video Downloader" },
+      { to: "/youtube-bulk-downloader", label: "Bulk Downloader" },
+      { to: "/youtube-playlist-downloader", label: "Playlist Downloader" },
+      { to: "/transcript", label: "Transcript Generator" },
+      { to: "/thumbnail", label: "Thumbnail Downloader" },
+    ],
+  },
+  {
+    platform: "TikTok", emoji: "🎵",
+    links: [
+      { to: "/tiktok-downloader", label: "Video Downloader" },
+      { to: "/tiktok-bulk-downloader", label: "Bulk Downloader" },
+    ],
+  },
+  {
+    platform: "Instagram", emoji: "📸",
+    links: [
+      { to: "/instagram-downloader", label: "Reel/Video Downloader" },
+      { to: "/instagram-bulk-downloader", label: "Bulk Downloader" },
+    ],
+  },
+  {
+    platform: "Facebook", emoji: "🔵",
+    links: [
+      { to: "/facebook-downloader", label: "Video Downloader" },
+      { to: "/facebook-bulk-downloader", label: "Bulk Downloader" },
+    ],
+  },
+  {
+    platform: "Douyin", emoji: "🇨🇳",
+    links: [
+      { to: "/douyin-downloader", label: "Video Downloader" },
+      { to: "/douyin-bulk-downloader", label: "Bulk Downloader" },
+    ],
+  },
+];
+
+function groupToolsByPlatform(tools: { name: string; route: string }[]): PlatformGroup[] {
+  const platformMap: Record<string, { emoji: string; order: number }> = {
+    youtube: { emoji: "🔴", order: 0 },
+    tiktok: { emoji: "🎵", order: 1 },
+    instagram: { emoji: "📸", order: 2 },
+    facebook: { emoji: "🔵", order: 3 },
+    douyin: { emoji: "🇨🇳", order: 4 },
+  };
+
+  const groups: Record<string, PlatformGroup> = {};
+  const other: PlatformGroup = { platform: "Other Tools", emoji: "🛠️", links: [] };
+
+  for (const tool of tools) {
+    const slug = tool.route.toLowerCase();
+    let matched = false;
+    for (const [key, meta] of Object.entries(platformMap)) {
+      if (slug.includes(key)) {
+        if (!groups[key]) {
+          const displayName = key.charAt(0).toUpperCase() + key.slice(1);
+          groups[key] = { platform: displayName === "Youtube" ? "YouTube" : displayName === "Tiktok" ? "TikTok" : displayName, emoji: meta.emoji, links: [] };
+        }
+        // Shorten label: remove platform name prefix
+        const shortLabel = tool.name
+          .replace(/youtube\s*/i, "")
+          .replace(/tiktok\s*/i, "")
+          .replace(/instagram\s*/i, "")
+          .replace(/facebook\s*/i, "")
+          .replace(/douyin\s*/i, "")
+          .trim() || tool.name;
+        groups[key].links.push({ to: tool.route, label: shortLabel });
+        matched = true;
+        break;
+      }
+    }
+    if (!matched) {
+      other.links.push({ to: tool.route, label: tool.name });
+    }
+  }
+
+  const sorted = Object.entries(groups)
+    .sort(([a], [b]) => (platformMap[a]?.order ?? 99) - (platformMap[b]?.order ?? 99))
+    .map(([, g]) => g);
+
+  if (other.links.length) sorted.push(other);
+  return sorted;
+}
+
+/** Desktop mega dropdown with platform sub-groups */
+const MegaDropdown = ({ groups, pathname }: { groups: PlatformGroup[]; pathname: string }) => {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  const allLinks = groups.flatMap((g) => g.links);
+  const isActive = allLinks.some((l) => l.to === pathname);
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        onClick={() => setOpen(!open)}
+        className={`flex items-center gap-1 rounded-lg px-3.5 py-2 text-sm font-medium transition-colors duration-200 ${
+          isActive ? "text-primary" : "text-muted-foreground hover:text-foreground"
+        }`}
+      >
+        Downloaders
+        <ChevronDown className={`h-3.5 w-3.5 transition-transform duration-200 ${open ? "rotate-180" : ""}`} />
+      </button>
+      {open && (
+        <motion.div
+          initial={{ opacity: 0, y: 6 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.15 }}
+          className="absolute left-1/2 -translate-x-1/2 top-full z-50 mt-1 rounded-xl border border-white/10 bg-card/95 p-3 shadow-2xl backdrop-blur-xl"
+          style={{ width: `${Math.min(groups.length, 5) * 170}px`, maxWidth: "90vw" }}
+        >
+          <div className="grid gap-3" style={{ gridTemplateColumns: `repeat(${Math.min(groups.length, 5)}, 1fr)` }}>
+            {groups.map((group) => (
+              <div key={group.platform}>
+                <p className="mb-1.5 px-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground/70">
+                  {group.emoji} {group.platform}
+                </p>
+                {group.links.map((link) => (
+                  <Link
+                    key={link.to}
+                    to={link.to}
+                    onClick={() => setOpen(false)}
+                    className={`block rounded-lg px-2 py-1.5 text-[13px] font-medium transition-colors ${
+                      pathname === link.to
+                        ? "bg-primary/10 text-primary"
+                        : "text-muted-foreground hover:bg-white/5 hover:text-foreground"
+                    }`}
+                  >
+                    {link.label}
+                  </Link>
+                ))}
+              </div>
+            ))}
+          </div>
+        </motion.div>
+      )}
+    </div>
+  );
+};
+
+const SimpleDropdown = ({ label, links, pathname }: { label: string; links: { to: string; label: string }[]; pathname: string }) => {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   const isActive = links.some((l) => l.to === pathname);
@@ -71,31 +227,15 @@ const DropdownMenu = ({ label, links, pathname }: { label: string; links: { to: 
 
 const Header = () => {
   const location = useLocation();
-  
   const [mobileOpen, setMobileOpen] = useState(false);
   const { data: tools } = usePublicTools();
   const { data: settings } = useSiteSettings();
+
   useEffect(() => {
     trackPageView(location.pathname);
   }, [location.pathname]);
 
-  const downloaderLinks = tools?.length
-    ? tools.map((t) => ({ to: t.route, label: t.name }))
-    : [
-        { to: "/youtube-downloader", label: "YouTube Downloader" },
-        { to: "/youtube-bulk-downloader", label: "YouTube Bulk Downloader" },
-        { to: "/youtube-playlist-downloader", label: "Playlist Downloader" },
-        { to: "/tiktok-downloader", label: "TikTok Downloader" },
-        { to: "/tiktok-bulk-downloader", label: "TikTok Bulk Downloader" },
-        { to: "/instagram-downloader", label: "Instagram Downloader" },
-        { to: "/instagram-bulk-downloader", label: "Instagram Bulk Downloader" },
-        { to: "/facebook-downloader", label: "Facebook Downloader" },
-        { to: "/facebook-bulk-downloader", label: "Facebook Bulk Downloader" },
-        { to: "/douyin-downloader", label: "Douyin Downloader" },
-        { to: "/douyin-bulk-downloader", label: "Douyin Bulk Downloader" },
-        { to: "/transcript", label: "YouTube Transcript" },
-        { to: "/thumbnail", label: "Thumbnail Downloader" },
-      ];
+  const platformGroups = tools?.length ? groupToolsByPlatform(tools) : fallbackGroups;
 
   return (
     <motion.header
@@ -111,10 +251,9 @@ const Header = () => {
       {/* Desktop Nav */}
       <div className="hidden items-center gap-1 md:flex">
         <nav className="flex items-center gap-1">
-          <DropdownMenu label="Tools" links={downloaderLinks} pathname={location.pathname} />
-          <DropdownMenu label="Pages" links={pageLinks} pathname={location.pathname} />
+          <MegaDropdown groups={platformGroups} pathname={location.pathname} />
+          <SimpleDropdown label="Pages" links={pageLinks} pathname={location.pathname} />
         </nav>
-
       </div>
 
       {/* Mobile toggle */}
@@ -125,12 +264,12 @@ const Header = () => {
         {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
       </button>
 
-      <MobileMenu open={mobileOpen} onClose={() => setMobileOpen(false)} pathname={location.pathname} downloaderLinks={downloaderLinks} />
+      <MobileMenu open={mobileOpen} onClose={() => setMobileOpen(false)} pathname={location.pathname} groups={platformGroups} />
     </motion.header>
   );
 };
 
-const MobileMenu = ({ open, onClose, pathname, downloaderLinks }: { open: boolean; onClose: () => void; pathname: string; downloaderLinks: { to: string; label: string }[] }) => {
+const MobileMenu = ({ open, onClose, pathname, groups }: { open: boolean; onClose: () => void; pathname: string; groups: PlatformGroup[] }) => {
   const [expandedGroup, setExpandedGroup] = useState<string | null>(null);
 
   if (!open) return null;
@@ -142,7 +281,7 @@ const MobileMenu = ({ open, onClose, pathname, downloaderLinks }: { open: boolea
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 z-[9999] flex flex-col md:hidden"
+      className="fixed inset-0 z-[9999] flex flex-col md:hidden overflow-y-auto"
       style={{ backgroundColor: "hsl(0 0% 3%)" }}
     >
       <div className="flex items-center justify-between px-6 py-5">
@@ -153,50 +292,51 @@ const MobileMenu = ({ open, onClose, pathname, downloaderLinks }: { open: boolea
           <X className="h-5 w-5" />
         </button>
       </div>
-      <nav className="flex flex-1 flex-col gap-1 px-6 pt-2">
-        <button
-          onClick={() => toggleGroup("tools")}
-          className="flex items-center justify-between rounded-lg px-4 py-3 text-sm font-semibold text-foreground"
-        >
-          Tools
-          <ChevronDown className={`h-4 w-4 transition-transform ${expandedGroup === "tools" ? "rotate-180" : ""}`} />
-        </button>
-        {expandedGroup === "tools" &&
-          downloaderLinks.map((link) => (
-            <Link
-              key={link.to}
-              to={link.to}
-              onClick={onClose}
-              className={`rounded-lg px-8 py-2.5 text-sm font-medium transition-colors ${
-                pathname === link.to ? "text-primary bg-primary/10" : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              {link.label}
-            </Link>
-          ))}
 
-        <button
-          onClick={() => toggleGroup("pages")}
-          className="flex items-center justify-between rounded-lg px-4 py-3 text-sm font-semibold text-foreground"
-        >
-          Pages
-          <ChevronDown className={`h-4 w-4 transition-transform ${expandedGroup === "pages" ? "rotate-180" : ""}`} />
-        </button>
-        {expandedGroup === "pages" &&
-          pageLinks.map((link) => (
-            <Link
-              key={link.to}
-              to={link.to}
-              onClick={onClose}
-              className={`rounded-lg px-8 py-2.5 text-sm font-medium transition-colors ${
-                pathname === link.to ? "text-primary bg-primary/10" : "text-muted-foreground hover:text-foreground"
-              }`}
+      <nav className="flex flex-1 flex-col gap-0.5 px-6 pt-2 pb-8">
+        <p className="px-4 py-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground/60">Downloaders</p>
+
+        {groups.map((group) => (
+          <div key={group.platform}>
+            <button
+              onClick={() => toggleGroup(group.platform)}
+              className="flex w-full items-center justify-between rounded-lg px-4 py-3 text-sm font-semibold text-foreground hover:bg-white/5 transition-colors"
             >
-              {link.label}
-            </Link>
-          ))}
+              <span>{group.emoji} {group.platform}</span>
+              <ChevronRight className={`h-4 w-4 text-muted-foreground transition-transform duration-200 ${expandedGroup === group.platform ? "rotate-90" : ""}`} />
+            </button>
+            {expandedGroup === group.platform &&
+              group.links.map((link) => (
+                <Link
+                  key={link.to}
+                  to={link.to}
+                  onClick={onClose}
+                  className={`block rounded-lg px-8 py-2.5 text-sm font-medium transition-colors ${
+                    pathname === link.to ? "text-primary bg-primary/10" : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  {link.label}
+                </Link>
+              ))}
+          </div>
+        ))}
+
+        <div className="my-2 h-px bg-white/5" />
+        <p className="px-4 py-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground/60">Pages</p>
+
+        {pageLinks.map((link) => (
+          <Link
+            key={link.to}
+            to={link.to}
+            onClick={onClose}
+            className={`rounded-lg px-4 py-2.5 text-sm font-medium transition-colors ${
+              pathname === link.to ? "text-primary bg-primary/10" : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            {link.label}
+          </Link>
+        ))}
       </nav>
-
     </motion.div>,
     document.body
   );
