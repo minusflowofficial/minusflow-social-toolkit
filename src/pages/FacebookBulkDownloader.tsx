@@ -151,7 +151,7 @@ const FacebookBulkDownloader = () => {
               {item.status === "success" && item.result?.download_links?.length && (
                 <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="rounded-xl border border-border bg-card p-4 space-y-3">
                   <div className="flex gap-3 items-start">
-                    {item.result.thumbnail && <img src={item.result.thumbnail} alt="" className="h-20 w-20 rounded-lg object-cover flex-shrink-0" crossOrigin="anonymous" referrerPolicy="no-referrer" />}
+                    {item.result.thumbnail && <img src={proxyThumb(item.result.thumbnail)} alt="" className="h-20 w-20 rounded-lg object-cover flex-shrink-0" />}
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-foreground line-clamp-2">{item.result.title}</p>
                     </div>
