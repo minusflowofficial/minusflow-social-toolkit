@@ -11,6 +11,8 @@ import {
   List,
   ListVideo,
   DownloadCloud,
+  Globe,
+  Facebook,
 } from "lucide-react";
 import { usePublicTools } from "@/hooks/useTools";
 
@@ -24,6 +26,8 @@ const iconMap: Record<string, React.ElementType> = {
   List,
   ListVideo,
   DownloadCloud,
+  Globe,
+  Facebook,
 };
 
 const gradients = [

@@ -37,6 +37,8 @@ import InstagramSingleDownloader from "./pages/InstagramSingleDownloader.tsx";
 import InstagramBulkDownloader from "./pages/InstagramBulkDownloader.tsx";
 import FacebookSingleDownloader from "./pages/FacebookSingleDownloader.tsx";
 import FacebookBulkDownloader from "./pages/FacebookBulkDownloader.tsx";
+import DouyinSingleDownloader from "./pages/DouyinSingleDownloader.tsx";
+import DouyinBulkDownloader from "./pages/DouyinBulkDownloader.tsx";
 import SignIn from "./pages/SignIn.tsx";
 import SignUp from "./pages/SignUp.tsx";
 import AuthGuardLayout from "./components/AuthGuardLayout.tsx";
@@ -71,6 +73,8 @@ const App = () => (
           <Route path="/instagram-bulk-downloader" element={<InstagramBulkDownloader />} />
           <Route path="/facebook-downloader" element={<FacebookSingleDownloader />} />
           <Route path="/facebook-bulk-downloader" element={<FacebookBulkDownloader />} />
+          <Route path="/douyin-downloader" element={<DouyinSingleDownloader />} />
+          <Route path="/douyin-bulk-downloader" element={<DouyinBulkDownloader />} />
           <Route path="/transcript" element={<TranscriptHome />} />
           <Route path="/transcript/:videoId" element={<TranscriptView />} />
           <Route path="/transcript-history" element={<TranscriptHistory />} />
