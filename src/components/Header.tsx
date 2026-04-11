@@ -1,13 +1,13 @@
 import { motion } from "framer-motion";
-import { Menu, X, ChevronDown, LogIn, UserPlus, LogOut, User } from "lucide-react";
+import { Menu, X, ChevronDown } from "lucide-react";
 import logoImg from "@/assets/logo.png";
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { useState, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { usePublicTools } from "@/hooks/useTools";
 import { trackPageView } from "@/lib/analytics";
 import { useSiteSettings } from "@/hooks/useSiteSettings";
-import { supabase } from "@/integrations/supabase/client";
+
 
 const pageLinks = [
   { to: "/about", label: "About Us" },
@@ -71,33 +71,13 @@ const DropdownMenu = ({ label, links, pathname }: { label: string; links: { to: 
 
 const Header = () => {
   const location = useLocation();
-  const navigate = useNavigate();
+  
   const [mobileOpen, setMobileOpen] = useState(false);
   const { data: tools } = usePublicTools();
   const { data: settings } = useSiteSettings();
-  const [user, setUser] = useState<any>(null);
-
-  const authEnabled = true; // Always show auth buttons since tools require login
-
   useEffect(() => {
     trackPageView(location.pathname);
   }, [location.pathname]);
-
-  useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null);
-    });
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null);
-    });
-    return () => subscription.unsubscribe();
-  }, []);
-
-  const handleSignOut = async () => {
-    await supabase.auth.signOut();
-    setUser(null);
-    navigate("/");
-  };
 
   const downloaderLinks = tools?.map((t) => ({
     to: t.route,
@@ -128,41 +108,6 @@ const Header = () => {
           <DropdownMenu label="Pages" links={pageLinks} pathname={location.pathname} />
         </nav>
 
-        {authEnabled && (
-          <div className="ml-4 flex items-center gap-2 border-l border-border/30 pl-4">
-            {user ? (
-              <>
-                <Link
-                  to="/profile"
-                  className="flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-                >
-                  <User className="h-3.5 w-3.5" /> Profile
-                </Link>
-                <button
-                  onClick={handleSignOut}
-                  className="flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-                >
-                  <LogOut className="h-3.5 w-3.5" /> Sign Out
-                </button>
-              </>
-            ) : (
-              <>
-                <Link
-                  to="/signin"
-                  className="flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
-                >
-                  <LogIn className="h-3.5 w-3.5" /> Sign In
-                </Link>
-                <Link
-                  to="/signup"
-                  className="flex items-center gap-1.5 rounded-lg bg-primary px-3.5 py-2 text-xs font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
-                >
-                  <UserPlus className="h-3.5 w-3.5" /> Sign Up
-                </Link>
-              </>
-            )}
-          </div>
-        )}
       </div>
 
       {/* Mobile toggle */}
@@ -173,12 +118,12 @@ const Header = () => {
         {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
       </button>
 
-      <MobileMenu open={mobileOpen} onClose={() => setMobileOpen(false)} pathname={location.pathname} downloaderLinks={downloaderLinks} authEnabled={authEnabled} user={user} onSignOut={handleSignOut} />
+      <MobileMenu open={mobileOpen} onClose={() => setMobileOpen(false)} pathname={location.pathname} downloaderLinks={downloaderLinks} />
     </motion.header>
   );
 };
 
-const MobileMenu = ({ open, onClose, pathname, downloaderLinks, authEnabled, user, onSignOut }: { open: boolean; onClose: () => void; pathname: string; downloaderLinks: { to: string; label: string }[]; authEnabled: boolean; user: any; onSignOut: () => void }) => {
+const MobileMenu = ({ open, onClose, pathname, downloaderLinks }: { open: boolean; onClose: () => void; pathname: string; downloaderLinks: { to: string; label: string }[] }) => {
   const [expandedGroup, setExpandedGroup] = useState<string | null>(null);
 
   if (!open) return null;
@@ -245,45 +190,6 @@ const MobileMenu = ({ open, onClose, pathname, downloaderLinks, authEnabled, use
           ))}
       </nav>
 
-      {/* Mobile Auth Buttons */}
-      {authEnabled && (
-        <div className="border-t border-border/30 px-6 py-4">
-          {user ? (
-            <div className="space-y-3">
-              <Link
-                to="/profile"
-                onClick={onClose}
-                className="flex w-full items-center justify-center gap-2 rounded-lg bg-primary/10 px-4 py-3 text-sm font-medium text-primary transition-colors hover:bg-primary/20"
-              >
-                <User className="h-4 w-4" /> My Profile
-              </Link>
-              <button
-                onClick={() => { onSignOut(); onClose(); }}
-                className="flex w-full items-center justify-center gap-2 rounded-lg bg-muted/50 px-4 py-3 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
-              >
-                <LogOut className="h-4 w-4" /> Sign Out
-              </button>
-            </div>
-          ) : (
-            <div className="flex gap-3">
-              <Link
-                to="/signin"
-                onClick={onClose}
-                className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-muted/50 px-4 py-3 text-sm font-medium text-foreground"
-              >
-                <LogIn className="h-4 w-4" /> Sign In
-              </Link>
-              <Link
-                to="/signup"
-                onClick={onClose}
-                className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground"
-              >
-                <UserPlus className="h-4 w-4" /> Sign Up
-              </Link>
-            </div>
-          )}
-        </div>
-      )}
     </motion.div>,
     document.body
   );
