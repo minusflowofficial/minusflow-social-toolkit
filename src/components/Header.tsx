@@ -76,10 +76,10 @@ function groupToolsByPlatform(tools: { name: string; route: string }[]): Platfor
   const other: PlatformGroup = { platform: "Other Tools", links: [] };
 
   for (const tool of tools) {
-    const slug = tool.route.toLowerCase();
+    const matchStr = (tool.route + " " + tool.name).toLowerCase();
     let matched = false;
     for (const [key, meta] of Object.entries(platformMap)) {
-      if (slug.includes(key)) {
+      if (matchStr.includes(key)) {
         if (!groups[key]) {
           const displayName = key.charAt(0).toUpperCase() + key.slice(1);
           groups[key] = {
@@ -93,7 +93,16 @@ function groupToolsByPlatform(tools: { name: string; route: string }[]): Platfor
       }
     }
     if (!matched) {
-      other.links.push({ to: tool.route, label: tool.name });
+      // Check if it's a YouTube-related tool by common keywords
+      const lowerName = tool.name.toLowerCase();
+      if (lowerName.includes("thumbnail") || lowerName.includes("transcript")) {
+        if (!groups["youtube"]) {
+          groups["youtube"] = { platform: "YouTube", links: [] };
+        }
+        groups["youtube"].links.push({ to: tool.route, label: tool.name });
+      } else {
+        other.links.push({ to: tool.route, label: tool.name });
+      }
     }
   }
 
