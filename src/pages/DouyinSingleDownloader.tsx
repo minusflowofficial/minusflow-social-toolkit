@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Download, Loader2, AlertCircle, Film, Music, Copy, Check, Zap, Shield, Globe, Smartphone } from "lucide-react";
+import { Download, Loader2, AlertCircle, Film, Music, Copy, Check, Zap, Shield, Globe, Smartphone, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import ToolPageLayout from "@/components/ToolPageLayout";
@@ -33,6 +33,77 @@ const CopyButton = ({ text }: { text: string }) => {
     >
       {copied ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
     </button>
+  );
+};
+
+const DownloadDropdown = ({ links, title, selectedIndex, onSelect }: { links: DownloadLink[]; title: string; selectedIndex: number; onSelect: (i: number) => void }) => {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false); };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  const selected = links[selectedIndex];
+
+  return (
+    <div className="flex items-center gap-1" ref={ref}>
+      {/* Download button */}
+      <Button
+        size="sm"
+        onClick={() => { triggerDownload(buildProxyUrl(selected.url, title, selected.quality)); toast.success("Download started!"); }}
+        className={`gap-1.5 text-white rounded-l-lg rounded-r-none ${
+          selected.format === "mp3" ? "bg-orange-500 hover:bg-orange-600" : "bg-[#fe2c55] hover:bg-[#e0264c]"
+        }`}
+      >
+        {selected.format === "mp3" ? <Music className="h-3.5 w-3.5" /> : <Film className="h-3.5 w-3.5" />}
+        {selected.quality}
+      </Button>
+
+      {/* Dropdown toggle */}
+      <div className="relative">
+        <Button
+          size="sm"
+          onClick={() => setOpen(!open)}
+          className={`rounded-l-none rounded-r-lg px-2 text-white ${
+            selected.format === "mp3" ? "bg-orange-500 hover:bg-orange-600" : "bg-[#fe2c55] hover:bg-[#e0264c]"
+          }`}
+        >
+          <ChevronDown className={`h-3.5 w-3.5 transition-transform ${open ? "rotate-180" : ""}`} />
+        </Button>
+
+        <AnimatePresence>
+          {open && (
+            <motion.div
+              initial={{ opacity: 0, y: -4 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -4 }}
+              className="absolute right-0 top-full mt-1 z-50 min-w-[180px] rounded-lg border border-border bg-card shadow-xl overflow-hidden"
+            >
+              {links.map((link, i) => (
+                <button
+                  key={i}
+                  onClick={() => { onSelect(i); setOpen(false); }}
+                  className={`w-full flex items-center justify-between gap-3 px-3 py-2.5 text-sm transition-colors ${
+                    i === selectedIndex ? "bg-[#fe2c55]/15 text-[#fe2c55]" : "text-foreground hover:bg-muted/50"
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    {link.format === "mp3" ? <Music className="h-3.5 w-3.5" /> : <Film className="h-3.5 w-3.5" />}
+                    <span className="font-medium">{link.quality}</span>
+                  </div>
+                  <span className="text-xs uppercase text-muted-foreground">{link.format}</span>
+                </button>
+              ))}
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+
+      <CopyButton text={selected.url} />
+    </div>
   );
 };
 
@@ -69,10 +140,11 @@ const DouyinSingleDownloader = () => {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<DouyinResult | null>(null);
   const [error, setError] = useState("");
+  const [selectedFormat, setSelectedFormat] = useState(0);
 
   const handleFetch = async () => {
     if (!url.trim()) { toast.error("Please paste a Douyin URL"); return; }
-    setLoading(true); setResult(null); setError("");
+    setLoading(true); setResult(null); setError(""); setSelectedFormat(0);
     try {
       const res = await fetch(FUNCTION_BASE, {
         method: "POST",
@@ -134,7 +206,6 @@ const DouyinSingleDownloader = () => {
 
         {result && result.download_links && result.download_links.length > 0 && (
           <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="rounded-2xl border border-border bg-card overflow-hidden">
-            {/* Thumbnail banner */}
             {result.thumbnail ? (
               <div className="relative h-48 w-full bg-muted">
                 <img src={proxyThumb(result.thumbnail)} alt={result.title} className="h-full w-full object-cover" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
@@ -149,27 +220,13 @@ const DouyinSingleDownloader = () => {
                 <p className="font-semibold text-foreground text-lg line-clamp-2">{result.title}</p>
                 <p className="text-xs text-muted-foreground mt-1">{result.download_links.length} format{result.download_links.length > 1 ? 's' : ''} available</p>
               </div>
-              <div className="flex flex-wrap gap-2">
-                {result.download_links.map((link, j) => (
-                  <div key={j} className="flex items-center gap-1">
-                    <Button
-                      size="sm"
-                      onClick={() => { triggerDownload(buildProxyUrl(link.url, result.title || "video", link.quality)); toast.success("Download started!"); }}
-                      className={`gap-1.5 text-white rounded-lg ${
-                        link.format === "mp3" 
-                          ? "bg-orange-500 hover:bg-orange-600" 
-                          : link.quality.includes("HD") 
-                            ? "bg-[#fe2c55] hover:bg-[#e0264c]" 
-                            : "bg-[#fe2c55]/80 hover:bg-[#e0264c]/80"
-                      }`}
-                    >
-                      {link.format === "mp3" ? <Music className="h-3.5 w-3.5" /> : <Film className="h-3.5 w-3.5" />}
-                      {link.quality}
-                    </Button>
-                    <CopyButton text={link.url} />
-                  </div>
-                ))}
-              </div>
+
+              <DownloadDropdown
+                links={result.download_links}
+                title={result.title || "video"}
+                selectedIndex={selectedFormat}
+                onSelect={setSelectedFormat}
+              />
             </div>
           </motion.div>
         )}
