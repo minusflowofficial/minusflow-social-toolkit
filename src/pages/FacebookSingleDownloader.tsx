@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import ToolPageLayout from "@/components/ToolPageLayout";
 
 const FUNCTION_BASE = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/facebook-download`;
+const proxyThumb = (url: string) => url ? `${FUNCTION_BASE}?url=${encodeURIComponent(url)}&filename=thumb.jpg` : "";
 
 interface DownloadLink { quality: string; url: string; format: string; }
 interface FBResult { success: boolean; title?: string; thumbnail?: string; download_links?: DownloadLink[]; error?: string; }
@@ -132,7 +133,7 @@ const FacebookSingleDownloader = () => {
         {result?.success && result.download_links?.length && (
           <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="rounded-xl border border-border bg-card p-4 space-y-4">
             <div className="flex gap-4 items-start">
-              {result.thumbnail && <img src={result.thumbnail} alt={result.title} className="h-28 w-28 flex-shrink-0 rounded-lg object-cover" crossOrigin="anonymous" referrerPolicy="no-referrer" />}
+              {result.thumbnail && <img src={proxyThumb(result.thumbnail)} alt={result.title} className="h-28 w-28 flex-shrink-0 rounded-lg object-cover" />}
               <div className="flex-1 min-w-0">
                 <p className="font-semibold text-foreground line-clamp-2">{result.title || "Facebook Video"}</p>
                 <p className="text-xs text-muted-foreground mt-1">{result.download_links.length} quality option{result.download_links.length > 1 ? "s" : ""} available</p>
