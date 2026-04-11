@@ -61,27 +61,24 @@ const App = () => (
           <Route path="/dmca" element={<DMCA />} />
           <Route path="/disclaimer" element={<Disclaimer />} />
 
-          {/* Individual tool pages — auth required */}
-          <Route path="/youtube-downloader" element={<AuthGuardLayout><YouTubeSingleDownloader /></AuthGuardLayout>} />
-          <Route path="/youtube-bulk-downloader" element={<AuthGuardLayout><YouTubeBulkDownloader /></AuthGuardLayout>} />
-          <Route path="/youtube-playlist-downloader" element={<AuthGuardLayout><YouTubePlaylistDownloader /></AuthGuardLayout>} />
-          <Route path="/tiktok-downloader" element={<AuthGuardLayout><TikTokSingleDownloader /></AuthGuardLayout>} />
-          <Route path="/tiktok-bulk-downloader" element={<AuthGuardLayout><TikTokBulkDownloader /></AuthGuardLayout>} />
-          <Route path="/instagram-downloader" element={<AuthGuardLayout><InstagramSingleDownloader /></AuthGuardLayout>} />
-          <Route path="/instagram-bulk-downloader" element={<AuthGuardLayout><InstagramBulkDownloader /></AuthGuardLayout>} />
-          <Route path="/facebook-downloader" element={<AuthGuardLayout><FacebookSingleDownloader /></AuthGuardLayout>} />
-          <Route path="/facebook-bulk-downloader" element={<AuthGuardLayout><FacebookBulkDownloader /></AuthGuardLayout>} />
-          <Route path="/transcript" element={<AuthGuardLayout><TranscriptHome /></AuthGuardLayout>} />
-          <Route path="/transcript/:videoId" element={<AuthGuardLayout><TranscriptView /></AuthGuardLayout>} />
-          <Route path="/transcript-history" element={<AuthGuardLayout><TranscriptHistory /></AuthGuardLayout>} />
-          <Route path="/thumbnail" element={<AuthGuardLayout><ThumbnailDownloader /></AuthGuardLayout>} />
+          {/* Individual tool pages — no auth required */}
+          <Route path="/youtube-downloader" element={<YouTubeSingleDownloader />} />
+          <Route path="/youtube-bulk-downloader" element={<YouTubeBulkDownloader />} />
+          <Route path="/youtube-playlist-downloader" element={<YouTubePlaylistDownloader />} />
+          <Route path="/tiktok-downloader" element={<TikTokSingleDownloader />} />
+          <Route path="/tiktok-bulk-downloader" element={<TikTokBulkDownloader />} />
+          <Route path="/instagram-downloader" element={<InstagramSingleDownloader />} />
+          <Route path="/instagram-bulk-downloader" element={<InstagramBulkDownloader />} />
+          <Route path="/facebook-downloader" element={<FacebookSingleDownloader />} />
+          <Route path="/facebook-bulk-downloader" element={<FacebookBulkDownloader />} />
+          <Route path="/transcript" element={<TranscriptHome />} />
+          <Route path="/transcript/:videoId" element={<TranscriptView />} />
+          <Route path="/transcript-history" element={<TranscriptHistory />} />
+          <Route path="/thumbnail" element={<ThumbnailDownloader />} />
 
           {/* Legacy routes */}
-          <Route path="/tiktok" element={<AuthGuardLayout><TikTokDownloader /></AuthGuardLayout>} />
-          <Route path="/signin" element={<SignIn />} />
-          <Route path="/signup" element={<SignUp />} />
-          <Route path="/profile" element={<AuthGuardLayout><Profile /></AuthGuardLayout>} />
-          <Route path="/instagram" element={<AuthGuardLayout><InstagramDownloader /></AuthGuardLayout>} />
+          <Route path="/tiktok" element={<TikTokDownloader />} />
+          <Route path="/instagram" element={<InstagramDownloader />} />
 
           {/* Admin routes */}
           <Route path="/admin/login" element={<AdminLogin />} />

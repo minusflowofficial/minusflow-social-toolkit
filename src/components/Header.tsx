@@ -75,29 +75,9 @@ const Header = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
   const { data: tools } = usePublicTools();
   const { data: settings } = useSiteSettings();
-  const [user, setUser] = useState<any>(null);
-
-  const authEnabled = true; // Always show auth buttons since tools require login
-
   useEffect(() => {
     trackPageView(location.pathname);
   }, [location.pathname]);
-
-  useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null);
-    });
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null);
-    });
-    return () => subscription.unsubscribe();
-  }, []);
-
-  const handleSignOut = async () => {
-    await supabase.auth.signOut();
-    setUser(null);
-    navigate("/");
-  };
 
   const downloaderLinks = tools?.map((t) => ({
     to: t.route,
