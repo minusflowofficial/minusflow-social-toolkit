@@ -11,6 +11,8 @@ import {
   List,
   ListVideo,
   DownloadCloud,
+  Globe,
+  Facebook,
 } from "lucide-react";
 import { usePublicTools } from "@/hooks/useTools";
 
@@ -24,6 +26,8 @@ const iconMap: Record<string, React.ElementType> = {
   List,
   ListVideo,
   DownloadCloud,
+  Globe,
+  Facebook,
 };
 
 const gradients = [
@@ -61,6 +65,8 @@ const fallbackTools = [
   { name: "TikTok Bulk Downloader", route: "/tiktok-bulk-downloader", icon: "DownloadCloud", description: "Download up to 20 TikTok videos at once", slug: "tt-bulk" },
   { name: "Instagram Downloader", route: "/instagram-downloader", icon: "Instagram", description: "Download reels, videos & posts in HD", slug: "ig-single" },
   { name: "Instagram Bulk Downloader", route: "/instagram-bulk-downloader", icon: "DownloadCloud", description: "Download up to 20 Instagram reels at once", slug: "ig-bulk" },
+  { name: "Douyin Downloader", route: "/douyin-downloader", icon: "Globe", description: "Download Douyin videos in HD quality", slug: "dy-single" },
+  { name: "Douyin Bulk Downloader", route: "/douyin-bulk-downloader", icon: "DownloadCloud", description: "Download multiple Douyin videos at once", slug: "dy-bulk" },
   { name: "Transcript Generator", route: "/transcript", icon: "FileText", description: "Extract YouTube video transcripts", slug: "tr" },
   { name: "Thumbnail Downloader", route: "/thumbnail", icon: "Image", description: "Get HD thumbnails from any video", slug: "th" },
 ];
