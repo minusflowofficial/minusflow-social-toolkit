@@ -19,7 +19,6 @@ const pageLinks = [
 
 interface PlatformGroup {
   platform: string;
-  emoji: string;
   links: { to: string; label: string }[];
 }
 
