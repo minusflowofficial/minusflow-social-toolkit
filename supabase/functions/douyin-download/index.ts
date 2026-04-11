@@ -52,27 +52,39 @@ async function fetchViaSavetik(videoUrl: string) {
 
   for (const m of anchorMatches) {
     const href = m[1];
-    const label = m[2].replace(/<[^>]+>/g, "").trim();
+    // Clean label: strip HTML, decode &nbsp; entities, collapse whitespace
+    const label = m[2]
+      .replace(/<[^>]+>/g, "")
+      .replace(/&nbsp;/gi, " ")
+      .replace(/\s+/g, " ")
+      .trim();
 
-    // Skip savetik.co links and empty hrefs
+    // Skip savetik.co links, empty hrefs, and irrelevant links
     if (href.includes("savetik.co") || href === "#" || href === "") continue;
 
-    // Accept CDN links (snapcdn, tikcdn, etc.) or any non-savetik link
+    const lowerLabel = label.toLowerCase();
+
+    // Skip non-download links (profile links, social links, etc.)
+    if (lowerLabel.includes("profile") || lowerLabel.includes("tiktok profile")) continue;
+    if (!lowerLabel.includes("download") && !lowerLabel.includes("mp4") && !lowerLabel.includes("mp3")) continue;
+
+    // Accept CDN links
     if (
       href.includes("snapcdn") ||
       href.includes("tikcdn") ||
       href.includes(".mp4") ||
       href.includes(".mp3") ||
       href.includes("cdn") ||
-      (!href.includes("savetik.co") && href.startsWith("https://"))
+      href.startsWith("https://")
     ) {
+      // Assign clean quality labels
       let quality = "SD";
-      const lowerLabel = label.toLowerCase();
       if (lowerLabel.includes("hd")) quality = "HD";
-      else if (lowerLabel.includes("mp3") || lowerLabel.includes("audio")) quality = "MP3";
-      else if (lowerLabel.includes("mp4")) quality = links.length === 0 ? "HD" : "SD";
+      else if (lowerLabel.includes("mp3")) quality = "MP3";
+      else if (lowerLabel.includes("mp4") && lowerLabel.includes("[1]")) quality = "MP4";
+      else if (lowerLabel.includes("mp4")) quality = links.length === 0 ? "MP4 HD" : "MP4 SD";
 
-      links.push({ quality: label || quality, url: href });
+      links.push({ quality, url: href });
     }
   }
 
