@@ -83,16 +83,15 @@ function groupToolsByPlatform(tools: { name: string; route: string }[]): Platfor
       if (slug.includes(key)) {
         if (!groups[key]) {
           const displayName = key.charAt(0).toUpperCase() + key.slice(1);
-          groups[key] = { platform: displayName === "Youtube" ? "YouTube" : displayName === "Tiktok" ? "TikTok" : displayName, emoji: meta.emoji, links: [] };
+          groups[key] = {
+            platform: displayName === "Youtube" ? "YouTube" : displayName === "Tiktok" ? "TikTok" : displayName,
+            emoji: meta.emoji,
+            links: [],
+          };
         }
-        // Shorten label: remove platform name prefix
         const shortLabel = tool.name
-          .replace(/youtube\s*/i, "")
-          .replace(/tiktok\s*/i, "")
-          .replace(/instagram\s*/i, "")
-          .replace(/facebook\s*/i, "")
-          .replace(/douyin\s*/i, "")
-          .trim() || tool.name;
+          .replace(/youtube\s*/i, "").replace(/tiktok\s*/i, "").replace(/instagram\s*/i, "")
+          .replace(/facebook\s*/i, "").replace(/douyin\s*/i, "").trim() || tool.name;
         groups[key].links.push({ to: tool.route, label: shortLabel });
         matched = true;
         break;
@@ -111,12 +110,11 @@ function groupToolsByPlatform(tools: { name: string; route: string }[]): Platfor
   return sorted;
 }
 
-/** Desktop mega dropdown with platform sub-groups */
-const MegaDropdown = ({ groups, pathname }: { groups: PlatformGroup[]; pathname: string }) => {
+/** Individual platform dropdown for desktop */
+const PlatformDropdown = ({ group, pathname }: { group: PlatformGroup; pathname: string }) => {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
-  const allLinks = groups.flatMap((g) => g.links);
-  const isActive = allLinks.some((l) => l.to === pathname);
+  const isActive = group.links.some((l) => l.to === pathname);
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
@@ -130,44 +128,35 @@ const MegaDropdown = ({ groups, pathname }: { groups: PlatformGroup[]; pathname:
     <div ref={ref} className="relative">
       <button
         onClick={() => setOpen(!open)}
-        className={`flex items-center gap-1 rounded-lg px-3.5 py-2 text-sm font-medium transition-colors duration-200 ${
+        className={`flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors duration-200 ${
           isActive ? "text-primary" : "text-muted-foreground hover:text-foreground"
         }`}
       >
-        Downloaders
-        <ChevronDown className={`h-3.5 w-3.5 transition-transform duration-200 ${open ? "rotate-180" : ""}`} />
+        <span className="text-base leading-none">{group.emoji}</span>
+        {group.platform}
+        <ChevronDown className={`h-3 w-3 transition-transform duration-200 ${open ? "rotate-180" : ""}`} />
       </button>
       {open && (
         <motion.div
           initial={{ opacity: 0, y: 6 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.15 }}
-          className="absolute left-1/2 -translate-x-1/2 top-full z-50 mt-1 rounded-xl border border-white/10 bg-card/95 p-3 shadow-2xl backdrop-blur-xl"
-          style={{ width: `${Math.min(groups.length, 5) * 170}px`, maxWidth: "90vw" }}
+          className="absolute left-0 top-full z-50 mt-1 min-w-[190px] rounded-xl border border-white/10 bg-card/95 p-1.5 shadow-xl backdrop-blur-xl"
         >
-          <div className="grid gap-3" style={{ gridTemplateColumns: `repeat(${Math.min(groups.length, 5)}, 1fr)` }}>
-            {groups.map((group) => (
-              <div key={group.platform}>
-                <p className="mb-1.5 px-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground/70">
-                  {group.emoji} {group.platform}
-                </p>
-                {group.links.map((link) => (
-                  <Link
-                    key={link.to}
-                    to={link.to}
-                    onClick={() => setOpen(false)}
-                    className={`block rounded-lg px-2 py-1.5 text-[13px] font-medium transition-colors ${
-                      pathname === link.to
-                        ? "bg-primary/10 text-primary"
-                        : "text-muted-foreground hover:bg-white/5 hover:text-foreground"
-                    }`}
-                  >
-                    {link.label}
-                  </Link>
-                ))}
-              </div>
-            ))}
-          </div>
+          {group.links.map((link) => (
+            <Link
+              key={link.to}
+              to={link.to}
+              onClick={() => setOpen(false)}
+              className={`block rounded-lg px-3.5 py-2.5 text-sm font-medium transition-colors ${
+                pathname === link.to
+                  ? "bg-primary/10 text-primary"
+                  : "text-muted-foreground hover:bg-white/5 hover:text-foreground"
+              }`}
+            >
+              {link.label}
+            </Link>
+          ))}
         </motion.div>
       )}
     </div>
@@ -191,7 +180,7 @@ const SimpleDropdown = ({ label, links, pathname }: { label: string; links: { to
     <div ref={ref} className="relative">
       <button
         onClick={() => setOpen(!open)}
-        className={`flex items-center gap-1 rounded-lg px-3.5 py-2 text-sm font-medium transition-colors duration-200 ${
+        className={`flex items-center gap-1 rounded-lg px-3 py-2 text-sm font-medium transition-colors duration-200 ${
           isActive ? "text-primary" : "text-muted-foreground hover:text-foreground"
         }`}
       >
@@ -248,10 +237,12 @@ const Header = () => {
         <img src={logoImg} alt="MinusFlow ToolKit" className="h-9 drop-shadow-[0_0_12px_hsl(0,85%,55%,0.3)] transition-all duration-300 group-hover:drop-shadow-[0_0_20px_hsl(0,85%,55%,0.5)]" />
       </Link>
 
-      {/* Desktop Nav */}
-      <div className="hidden items-center gap-1 md:flex">
-        <nav className="flex items-center gap-1">
-          <MegaDropdown groups={platformGroups} pathname={location.pathname} />
+      {/* Desktop Nav — each platform is its own dropdown */}
+      <div className="hidden items-center gap-0.5 md:flex">
+        <nav className="flex items-center gap-0.5">
+          {platformGroups.map((group) => (
+            <PlatformDropdown key={group.platform} group={group} pathname={location.pathname} />
+          ))}
           <SimpleDropdown label="Pages" links={pageLinks} pathname={location.pathname} />
         </nav>
       </div>
@@ -294,8 +285,6 @@ const MobileMenu = ({ open, onClose, pathname, groups }: { open: boolean; onClos
       </div>
 
       <nav className="flex flex-1 flex-col gap-0.5 px-6 pt-2 pb-8">
-        <p className="px-4 py-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground/60">Downloaders</p>
-
         {groups.map((group) => (
           <div key={group.platform}>
             <button
@@ -322,7 +311,6 @@ const MobileMenu = ({ open, onClose, pathname, groups }: { open: boolean; onClos
         ))}
 
         <div className="my-2 h-px bg-white/5" />
-        <p className="px-4 py-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground/60">Pages</p>
 
         {pageLinks.map((link) => (
           <Link
