@@ -25,41 +25,41 @@ interface PlatformGroup {
 
 const fallbackGroups: PlatformGroup[] = [
   {
-    platform: "YouTube", emoji: "🔴",
+    platform: "YouTube",
     links: [
-      { to: "/youtube-downloader", label: "Video Downloader" },
-      { to: "/youtube-bulk-downloader", label: "Bulk Downloader" },
-      { to: "/youtube-playlist-downloader", label: "Playlist Downloader" },
-      { to: "/transcript", label: "Transcript Generator" },
-      { to: "/thumbnail", label: "Thumbnail Downloader" },
+      { to: "/youtube-downloader", label: "YouTube Video Downloader" },
+      { to: "/youtube-bulk-downloader", label: "YouTube Bulk Video Downloader" },
+      { to: "/youtube-playlist-downloader", label: "YouTube Playlist Downloader" },
+      { to: "/thumbnail", label: "YouTube Thumbnail Download" },
+      { to: "/transcript", label: "YouTube Transcript Extractor" },
     ],
   },
   {
-    platform: "TikTok", emoji: "🎵",
+    platform: "TikTok",
     links: [
-      { to: "/tiktok-downloader", label: "Video Downloader" },
-      { to: "/tiktok-bulk-downloader", label: "Bulk Downloader" },
+      { to: "/tiktok-downloader", label: "TikTok Video Downloader" },
+      { to: "/tiktok-bulk-downloader", label: "TikTok Bulk Video Downloader" },
     ],
   },
   {
-    platform: "Instagram", emoji: "📸",
+    platform: "Instagram",
     links: [
-      { to: "/instagram-downloader", label: "Reel/Video Downloader" },
-      { to: "/instagram-bulk-downloader", label: "Bulk Downloader" },
+      { to: "/instagram-downloader", label: "Instagram Video Downloader" },
+      { to: "/instagram-bulk-downloader", label: "Instagram Bulk Video Downloader" },
     ],
   },
   {
-    platform: "Facebook", emoji: "🔵",
+    platform: "Facebook",
     links: [
-      { to: "/facebook-downloader", label: "Video Downloader" },
-      { to: "/facebook-bulk-downloader", label: "Bulk Downloader" },
+      { to: "/facebook-downloader", label: "Facebook Video Downloader" },
+      { to: "/facebook-bulk-downloader", label: "Facebook Bulk Video Downloader" },
     ],
   },
   {
-    platform: "Douyin", emoji: "🇨🇳",
+    platform: "Douyin",
     links: [
-      { to: "/douyin-downloader", label: "Video Downloader" },
-      { to: "/douyin-bulk-downloader", label: "Bulk Downloader" },
+      { to: "/douyin-downloader", label: "Douyin Video Downloader" },
+      { to: "/douyin-bulk-downloader", label: "Douyin Bulk Video Downloader" },
     ],
   },
 ];
