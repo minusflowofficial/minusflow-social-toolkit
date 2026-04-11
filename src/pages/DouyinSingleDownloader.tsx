@@ -133,29 +133,43 @@ const DouyinSingleDownloader = () => {
         </AnimatePresence>
 
         {result && result.download_links && result.download_links.length > 0 && (
-          <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="rounded-xl border border-border bg-card p-4 space-y-4">
-            <div className="flex gap-4 items-start">
-              {result.thumbnail && (
-                <img src={proxyThumb(result.thumbnail)} alt={result.title} className="h-28 w-28 flex-shrink-0 rounded-lg object-cover" />
-              )}
-              <div className="flex-1 min-w-0">
-                <p className="font-semibold text-foreground line-clamp-2">{result.title}</p>
+          <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="rounded-2xl border border-border bg-card overflow-hidden">
+            {/* Thumbnail banner */}
+            {result.thumbnail ? (
+              <div className="relative h-48 w-full bg-muted">
+                <img src={proxyThumb(result.thumbnail)} alt={result.title} className="h-full w-full object-cover" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                <div className="absolute inset-0 bg-gradient-to-t from-card via-transparent to-transparent" />
               </div>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {result.download_links.map((link, j) => (
-                <div key={j} className="flex items-center gap-1">
-                  <Button
-                    size="sm"
-                    onClick={() => { triggerDownload(buildProxyUrl(link.url, result.title || "video", link.quality)); toast.success("Download started!"); }}
-                    className={`gap-1.5 text-white ${link.format === "mp3" ? "bg-orange-500 hover:bg-orange-600" : "bg-[#fe2c55] hover:bg-[#e0264c]"}`}
-                  >
-                    {link.format === "mp3" ? <Music className="h-3.5 w-3.5" /> : <Film className="h-3.5 w-3.5" />}
-                    {link.quality}
-                  </Button>
-                  <CopyButton text={link.url} />
-                </div>
-              ))}
+            ) : (
+              <div className="h-2 w-full bg-gradient-to-r from-[#fe2c55] to-[#25f4ee]" />
+            )}
+            
+            <div className="p-5 space-y-4">
+              <div>
+                <p className="font-semibold text-foreground text-lg line-clamp-2">{result.title}</p>
+                <p className="text-xs text-muted-foreground mt-1">{result.download_links.length} format{result.download_links.length > 1 ? 's' : ''} available</p>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {result.download_links.map((link, j) => (
+                  <div key={j} className="flex items-center gap-1">
+                    <Button
+                      size="sm"
+                      onClick={() => { triggerDownload(buildProxyUrl(link.url, result.title || "video", link.quality)); toast.success("Download started!"); }}
+                      className={`gap-1.5 text-white rounded-lg ${
+                        link.format === "mp3" 
+                          ? "bg-orange-500 hover:bg-orange-600" 
+                          : link.quality.includes("HD") 
+                            ? "bg-[#fe2c55] hover:bg-[#e0264c]" 
+                            : "bg-[#fe2c55]/80 hover:bg-[#e0264c]/80"
+                      }`}
+                    >
+                      {link.format === "mp3" ? <Music className="h-3.5 w-3.5" /> : <Film className="h-3.5 w-3.5" />}
+                      {link.quality}
+                    </Button>
+                    <CopyButton text={link.url} />
+                  </div>
+                ))}
+              </div>
             </div>
           </motion.div>
         )}
