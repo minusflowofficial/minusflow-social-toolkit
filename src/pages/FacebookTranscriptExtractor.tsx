@@ -60,6 +60,7 @@ const FacebookTranscriptExtractor = () => {
   const [transcript, setTranscript] = useState("");
   const [showTimestamps, setShowTimestamps] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
   const captchaRef = useRef<HCaptcha>(null);
 
   const callFunction = async (body: Record<string, unknown>) => {
@@ -73,14 +74,14 @@ const FacebookTranscriptExtractor = () => {
     return data;
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!url.trim()) { toast.error("Please paste a video URL"); return; }
+    if (!captchaToken) { toast.error("Please complete the captcha first"); return; }
     setError(""); setTranscript(""); setVideoInfo(null);
-    setStage("captcha");
-    captchaRef.current?.execute();
+    await startTranscription(captchaToken);
   };
 
-  const onCaptchaVerify = useCallback(async (token: string) => {
+  const startTranscription = useCallback(async (token: string) => {
     try {
       // Step 1: Create
       setStage("creating");
@@ -96,17 +97,19 @@ const FacebookTranscriptExtractor = () => {
       // Step 3: Poll status
       setStage("polling");
       let attempts = 0;
-      const maxAttempts = 120; // 10 min max
+      const maxAttempts = 120;
       while (attempts < maxAttempts) {
         await new Promise((r) => setTimeout(r, 5000));
         const statusData = await callFunction({ action: "status", fileId });
         if (statusData.status === "ok" && statusData.url) {
-          // Step 4: Fetch text
           setStage("fetching");
           const textData = await callFunction({ action: "fetch-text", url: statusData.url });
           setTranscript(textData.text || "");
           setStage("done");
           toast.success("Transcript ready!");
+          // Reset captcha for next use
+          captchaRef.current?.resetCaptcha();
+          setCaptchaToken(null);
           return;
         }
         if (statusData.status === "error") {
@@ -118,6 +121,8 @@ const FacebookTranscriptExtractor = () => {
     } catch (err: any) {
       setError(err.message || "Something went wrong");
       setStage("error");
+      captchaRef.current?.resetCaptcha();
+      setCaptchaToken(null);
     }
   }, [url]);
 
@@ -193,16 +198,22 @@ const FacebookTranscriptExtractor = () => {
               </Button>
             </div>
 
-            {/* hCaptcha (invisible) */}
-            <div className="hidden">
+            {/* hCaptcha - visible compact */}
+            <div className="mt-4 flex items-center gap-3">
               <HCaptcha
                 ref={captchaRef}
                 sitekey={HCAPTCHA_SITEKEY}
-                size="invisible"
-                onVerify={onCaptchaVerify}
-                onError={() => { setError("Captcha verification failed. Please try again."); setStage("error"); }}
-                onExpire={() => { setError("Captcha expired. Please try again."); setStage("error"); }}
+                size="compact"
+                theme="dark"
+                onVerify={(token) => setCaptchaToken(token)}
+                onError={() => { setCaptchaToken(null); toast.error("Captcha failed"); }}
+                onExpire={() => { setCaptchaToken(null); }}
               />
+              {captchaToken && (
+                <span className="text-xs text-green-500 flex items-center gap-1">
+                  <CheckCircle2 className="h-3.5 w-3.5" /> Verified
+                </span>
+              )}
             </div>
           </motion.div>
 

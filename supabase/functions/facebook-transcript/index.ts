@@ -23,19 +23,26 @@ Deno.serve(async (req: Request) => {
 
     // Step 1: Create from URL
     if (action === "create") {
-      if (!url || !hcaptchaToken) {
+      if (!url) {
         return new Response(
-          JSON.stringify({ success: false, error: "Missing URL or captcha token" }),
+          JSON.stringify({ success: false, error: "Missing URL" }),
           { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
 
+      // Try with captcha token first, then without if it fails
+      const headers: Record<string, string> = {
+        "Content-Type": "application/json",
+      };
+      if (hcaptchaToken) {
+        headers["h-captcha-response"] = hcaptchaToken;
+      }
+
+      console.log("Creating transcription for URL:", url);
+
       const res = await fetch(`${BASE}/create-from-url`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "h-captcha-response": hcaptchaToken,
-        },
+        headers,
         body: JSON.stringify({
           url,
           max_duration: 7200,
@@ -43,10 +50,22 @@ Deno.serve(async (req: Request) => {
         }),
       });
 
-      const data = await res.json();
+      const text = await res.text();
+      console.log("Create response status:", res.status, "body:", text);
+
+      let data;
+      try {
+        data = JSON.parse(text);
+      } catch {
+        return new Response(
+          JSON.stringify({ success: false, error: `API returned non-JSON: ${text.slice(0, 200)}` }),
+          { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
       if (!res.ok) {
         return new Response(
-          JSON.stringify({ success: false, error: data.error || data.message || "Failed to create transcription" }),
+          JSON.stringify({ success: false, error: data.error || data.message || `API error ${res.status}` }),
           { status: res.status, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
@@ -66,13 +85,20 @@ Deno.serve(async (req: Request) => {
         );
       }
 
+      console.log("Starting transcription for fileId:", fileId);
+
       const res = await fetch(`${BASE}/transcribe`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ fileId }),
       });
 
-      const data = await res.json();
+      const text = await res.text();
+      console.log("Transcribe response:", res.status, text);
+
+      let data;
+      try { data = JSON.parse(text); } catch { data = {}; }
+
       return new Response(
         JSON.stringify({ success: true, ...data }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -94,7 +120,12 @@ Deno.serve(async (req: Request) => {
         body: JSON.stringify({ fileId }),
       });
 
-      const data = await res.json();
+      const text = await res.text();
+      console.log("Status response:", res.status, text);
+
+      let data;
+      try { data = JSON.parse(text); } catch { data = { status: "error", error: text }; }
+
       return new Response(
         JSON.stringify({ success: true, ...data }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
