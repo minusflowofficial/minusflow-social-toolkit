@@ -60,6 +60,7 @@ const FacebookTranscriptExtractor = () => {
   const [transcript, setTranscript] = useState("");
   const [showTimestamps, setShowTimestamps] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
   const captchaRef = useRef<HCaptcha>(null);
 
   const callFunction = async (body: Record<string, unknown>) => {
@@ -73,11 +74,11 @@ const FacebookTranscriptExtractor = () => {
     return data;
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!url.trim()) { toast.error("Please paste a video URL"); return; }
+    if (!captchaToken) { toast.error("Please complete the captcha first"); return; }
     setError(""); setTranscript(""); setVideoInfo(null);
-    setStage("captcha");
-    captchaRef.current?.execute();
+    await startTranscription(captchaToken);
   };
 
   const onCaptchaVerify = useCallback(async (token: string) => {
