@@ -81,7 +81,7 @@ const FacebookTranscriptExtractor = () => {
     await startTranscription(captchaToken);
   };
 
-  const onCaptchaVerify = useCallback(async (token: string) => {
+  const startTranscription = useCallback(async (token: string) => {
     try {
       // Step 1: Create
       setStage("creating");
@@ -97,17 +97,19 @@ const FacebookTranscriptExtractor = () => {
       // Step 3: Poll status
       setStage("polling");
       let attempts = 0;
-      const maxAttempts = 120; // 10 min max
+      const maxAttempts = 120;
       while (attempts < maxAttempts) {
         await new Promise((r) => setTimeout(r, 5000));
         const statusData = await callFunction({ action: "status", fileId });
         if (statusData.status === "ok" && statusData.url) {
-          // Step 4: Fetch text
           setStage("fetching");
           const textData = await callFunction({ action: "fetch-text", url: statusData.url });
           setTranscript(textData.text || "");
           setStage("done");
           toast.success("Transcript ready!");
+          // Reset captcha for next use
+          captchaRef.current?.resetCaptcha();
+          setCaptchaToken(null);
           return;
         }
         if (statusData.status === "error") {
@@ -119,6 +121,8 @@ const FacebookTranscriptExtractor = () => {
     } catch (err: any) {
       setError(err.message || "Something went wrong");
       setStage("error");
+      captchaRef.current?.resetCaptcha();
+      setCaptchaToken(null);
     }
   }, [url]);
 
