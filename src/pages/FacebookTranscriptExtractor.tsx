@@ -198,16 +198,22 @@ const FacebookTranscriptExtractor = () => {
               </Button>
             </div>
 
-            {/* hCaptcha (invisible) */}
-            <div className="hidden">
+            {/* hCaptcha - visible compact */}
+            <div className="mt-4 flex items-center gap-3">
               <HCaptcha
                 ref={captchaRef}
                 sitekey={HCAPTCHA_SITEKEY}
-                size="invisible"
-                onVerify={onCaptchaVerify}
-                onError={() => { setError("Captcha verification failed. Please try again."); setStage("error"); }}
-                onExpire={() => { setError("Captcha expired. Please try again."); setStage("error"); }}
+                size="compact"
+                theme="dark"
+                onVerify={(token) => setCaptchaToken(token)}
+                onError={() => { setCaptchaToken(null); toast.error("Captcha failed"); }}
+                onExpire={() => { setCaptchaToken(null); }}
               />
+              {captchaToken && (
+                <span className="text-xs text-green-500 flex items-center gap-1">
+                  <CheckCircle2 className="h-3.5 w-3.5" /> Verified
+                </span>
+              )}
             </div>
           </motion.div>
 
