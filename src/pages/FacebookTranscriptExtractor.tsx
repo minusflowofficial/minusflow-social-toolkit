@@ -1,93 +1,139 @@
-import { useState } from "react";
+import { useState, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   FileText, Loader2, Copy, Download, AlertCircle, Search, X,
-  Zap, Globe, Shield, Brain, Languages, Clock,
+  Zap, Globe, Shield, Brain, Languages, CheckCircle2, Clock, Film,
 } from "lucide-react";
+import HCaptcha from "@hcaptcha/react-hcaptcha";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
 import ToolPageLayout from "@/components/ToolPageLayout";
 
-type Stage = "idle" | "processing" | "done" | "error";
+const FUNCTION_BASE = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/facebook-transcript`;
+const HCAPTCHA_SITEKEY = "ec0a1d1c-0142-40fc-b62a-9b94774065fc";
 
-const stages = [
-  { pct: 15, label: "Detecting platform..." },
-  { pct: 40, label: "Fetching video..." },
-  { pct: 75, label: "Transcribing with AI..." },
-  { pct: 95, label: "Finalizing..." },
-];
+type Stage = "idle" | "creating" | "transcribing" | "polling" | "fetching" | "done" | "error";
+
+interface VideoInfo {
+  file_id: string;
+  title: string;
+  duration: number;
+}
+
+const formatDuration = (sec: number) => {
+  const h = Math.floor(sec / 3600);
+  const m = Math.floor((sec % 3600) / 60);
+  const s = Math.floor(sec % 60);
+  if (h > 0) return `${h}h ${m}m ${s}s`;
+  if (m > 0) return `${m}m ${s}s`;
+  return `${s}s`;
+};
+
+const stageLabels: Record<Stage, string> = {
+  idle: "",
+  creating: "Fetching video info...",
+  transcribing: "Starting transcription...",
+  polling: "Processing audio...",
+  fetching: "Downloading transcript...",
+  done: "Done!",
+  error: "Error",
+};
+
+const stageProgress: Record<Stage, number> = {
+  idle: 0, creating: 15, transcribing: 30, polling: 65, fetching: 90, done: 100, error: 0,
+};
 
 const FacebookTranscriptExtractor = () => {
   const [url, setUrl] = useState("");
   const [stage, setStage] = useState<Stage>("idle");
-  const [progress, setProgress] = useState(0);
-  const [stageLabel, setStageLabel] = useState("");
   const [error, setError] = useState("");
+  const [videoInfo, setVideoInfo] = useState<VideoInfo | null>(null);
   const [transcript, setTranscript] = useState("");
-  const [videoTitle, setVideoTitle] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+  const captchaRef = useRef<HCaptcha>(null);
 
-  const isProcessing = stage === "processing";
+  const isProcessing = ["creating", "transcribing", "polling", "fetching"].includes(stage);
 
-  const animateProgress = () => {
-    let i = 0;
-    const interval = setInterval(() => {
-      if (i < stages.length) {
-        setProgress(stages[i].pct);
-        setStageLabel(stages[i].label);
-        i++;
-      } else {
-        clearInterval(interval);
-      }
-    }, 1500);
-    return interval;
+  const callFn = async (body: Record<string, unknown>) => {
+    const res = await fetch(FUNCTION_BASE, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    const data = await res.json();
+    if (!res.ok || data.success === false || data.error) {
+      throw new Error(data.error || "Request failed");
+    }
+    return data;
   };
 
-  const handleSubmit = async () => {
-    if (!url.trim()) { toast.error("Please paste a video URL"); return; }
-    setError(""); setTranscript(""); setVideoTitle("");
-    setStage("processing"); setProgress(5); setStageLabel("Starting...");
+  const resetCaptcha = () => {
+    captchaRef.current?.resetCaptcha();
+    setCaptchaToken(null);
+  };
 
-    const interval = animateProgress();
-
+  const startTranscription = useCallback(async (token: string) => {
     try {
-      const { data, error: fnError } = await supabase.functions.invoke("facebook-transcript", {
-        body: { url: url.trim() },
+      setStage("creating");
+      const createData = await callFn({ action: "create", url: url.trim(), hcaptchaToken: token });
+      const fileId = createData.file_id;
+      if (!fileId) throw new Error("No file ID returned. Please try a different URL.");
+      setVideoInfo({
+        file_id: fileId,
+        title: createData.title || "Video",
+        duration: createData.duration || 0,
       });
-      clearInterval(interval);
 
-      if (fnError) throw new Error(fnError.message);
-      if (!data?.success) throw new Error(data?.error || "Transcription failed");
+      setStage("transcribing");
+      await callFn({ action: "transcribe", fileId });
 
-      setProgress(100);
-      setStageLabel("Done!");
-      setTranscript(data.transcript);
-      setVideoTitle(data.title || "Video Transcript");
-      setStage("done");
-      toast.success("Transcript ready!");
+      setStage("polling");
+      const maxAttempts = 120;
+      for (let i = 0; i < maxAttempts; i++) {
+        await new Promise((r) => setTimeout(r, 5000));
+        const s = await callFn({ action: "status", fileId });
+        if (s.status === "ok" && s.url) {
+          setStage("fetching");
+          const t = await callFn({ action: "fetch-text", url: s.url });
+          setTranscript(t.text || "");
+          setStage("done");
+          toast.success("Transcript ready!");
+          resetCaptcha();
+          return;
+        }
+        if (s.status === "error") throw new Error(s.error || "Transcription failed");
+      }
+      throw new Error("Transcription timed out. Please try again.");
     } catch (err) {
-      clearInterval(interval);
       const msg = err instanceof Error ? err.message : "Something went wrong";
       setError(msg);
       setStage("error");
       toast.error(msg);
+      resetCaptcha();
     }
+  }, [url]);
+
+  const handleSubmit = async () => {
+    if (!url.trim()) { toast.error("Please paste a video URL"); return; }
+    if (!captchaToken) { toast.error("Please solve the captcha first"); return; }
+    setError(""); setTranscript(""); setVideoInfo(null);
+    await startTranscription(captchaToken);
   };
 
   const copyTranscript = () => {
     navigator.clipboard.writeText(transcript);
-    toast.success("Copied to clipboard!");
+    toast.success("Copied!");
   };
 
   const downloadTxt = () => {
     const blob = new Blob([transcript], { type: "text/plain" });
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
-    a.download = `MinusFlow.net_${videoTitle.replace(/[^\w\s]/g, "").slice(0, 40)}.txt`;
+    a.download = `MinusFlow.net_${(videoInfo?.title || "transcript").replace(/[^\w\s]/g, "").slice(0, 40)}.txt`;
     a.click();
     URL.revokeObjectURL(a.href);
     toast.success("Downloaded!");
@@ -100,51 +146,53 @@ const FacebookTranscriptExtractor = () => {
   const wordCount = transcript.split(/\s+/).filter(Boolean).length;
 
   const features = [
-    { icon: Brain, title: "AI-Powered", desc: "Powered by Google Gemini for accurate, context-aware transcription." },
-    { icon: Globe, title: "Multi-Platform", desc: "Works with Facebook, YouTube, TikTok, Instagram & more." },
-    { icon: Zap, title: "Lightning Fast", desc: "Get your transcript in seconds, not minutes. No waiting." },
-    { icon: Shield, title: "Privacy First", desc: "No login. No tracking. Your URLs are never stored." },
-    { icon: Languages, title: "100+ Languages", desc: "Auto-detects and transcribes content in any language." },
-    { icon: FileText, title: "Export Ready", desc: "Download as plain text, copy line-by-line, or grab the full transcript." },
+    { icon: Brain, title: "AI-Powered", desc: "Advanced AI transcription delivers accurate, context-aware results every time." },
+    { icon: Globe, title: "Multi-Platform", desc: "Works with Facebook, YouTube, TikTok, Instagram, SoundCloud & more." },
+    { icon: Zap, title: "Lightning Fast", desc: "Transcripts ready in under a minute for most videos. No waiting around." },
+    { icon: Shield, title: "Privacy First", desc: "No login required. Your URLs and transcripts are never stored on our servers." },
+    { icon: Languages, title: "100+ Languages", desc: "Auto-detects and transcribes content in over 100 languages and dialects." },
+    { icon: FileText, title: "Export Ready", desc: "Copy individual lines, the full text, or download as a clean .txt file." },
   ];
 
   const steps = [
-    { title: "Paste Video URL", desc: "Copy any video link from Facebook, YouTube, TikTok, or Instagram and paste it in the box." },
-    { title: "Click Transcribe", desc: "Hit the button — our AI will fetch the video and generate a full transcript automatically." },
-    { title: "Copy or Download", desc: "Search through the transcript, copy individual lines, or download the entire text as a .txt file." },
+    { title: "Paste Video URL", desc: "Copy any video link from Facebook, YouTube, TikTok, Instagram, or SoundCloud and paste it in the input box." },
+    { title: "Solve Quick Captcha", desc: "Click the captcha checkbox to verify you're human — takes one second, keeps the service free for everyone." },
+    { title: "Click Transcribe", desc: "Hit the Transcribe button and watch the progress bar. Your full transcript appears as soon as it's ready." },
   ];
 
   const faqs = [
-    { q: "Which platforms are supported?", a: "We support Facebook, YouTube, TikTok, Instagram, and most public video platforms. Just paste the link and we'll handle the rest." },
-    { q: "Is this really free?", a: "Yes — 100% free, no signup required, no hidden fees. Use it as much as you want." },
-    { q: "How accurate is the transcription?", a: "We use Google's Gemini AI for transcription, which delivers industry-leading accuracy across 100+ languages and dialects." },
-    { q: "Are there video length limits?", a: "Yes — videos must be under 25MB in size to fit our AI processing limits. For most short videos and reels, this works perfectly." },
-    { q: "Can I transcribe private videos?", a: "No, only publicly accessible videos can be transcribed. The video must be viewable without login." },
-    { q: "Do you store my videos or transcripts?", a: "Never. We process everything in real-time and don't store any data on our servers. Your privacy is fully protected." },
-    { q: "What languages are supported?", a: "Over 100 languages including English, Spanish, Hindi, Arabic, French, German, Mandarin, Urdu, and many more — auto-detected." },
-    { q: "Can I download the transcript?", a: "Yes, you can download as a plain .txt file or copy the full text or individual lines to your clipboard with one click." },
+    { q: "Which platforms are supported?", a: "Facebook, YouTube, TikTok, Instagram, SoundCloud, Twitter/X, and most public video platforms. Just paste the link." },
+    { q: "Is this really free?", a: "Yes — 100% free, no signup, no hidden fees. The captcha keeps the service free by preventing abuse." },
+    { q: "How long does transcription take?", a: "Usually 20–60 seconds depending on video length. Longer videos may take a few minutes." },
+    { q: "Are there video length limits?", a: "Maximum video duration is 2 hours. For best results, use videos with clear audio and minimal background noise." },
+    { q: "Can I transcribe private videos?", a: "No — only publicly accessible videos can be transcribed. The video must be viewable without login." },
+    { q: "Why do I need to solve a captcha?", a: "The captcha prevents bots from abusing the service, which keeps it fast and free for real users like you." },
+    { q: "Do you store my videos or transcripts?", a: "No. Everything is processed in real-time and never saved on our servers. Full privacy guaranteed." },
+    { q: "What languages are supported?", a: "Over 100 languages including English, Spanish, Hindi, Urdu, Arabic, French, German, Mandarin, and more — auto-detected." },
+    { q: "Can I download the transcript?", a: "Yes — download as a plain .txt file, copy the full text, or copy individual lines with one click." },
+    { q: "What if transcription fails?", a: "Try refreshing the captcha and submitting again. If it persists, the video may have no audio or be inaccessible." },
   ];
 
   const seoBlocks = [
     {
-      title: "Transcribe Facebook, YouTube, TikTok & Instagram Videos to Text Instantly",
-      content: "MinusFlow's AI Video Transcript Extractor converts spoken content from any public video into clean, readable text. Whether you need to transcribe a Facebook Reel, a YouTube tutorial, a TikTok clip, or an Instagram video, our tool handles it in seconds — no downloads, no installs, no signup required.",
+      title: "Transcribe Facebook, YouTube, TikTok & Instagram Videos to Text",
+      content: "MinusFlow's AI Video Transcript Extractor instantly converts spoken content from any public video into clean, readable text. Whether it's a Facebook Reel, YouTube tutorial, TikTok clip, or Instagram video, our tool handles it in seconds — no software downloads, no installations, no signup required.",
     },
     {
       title: "Why Use an AI Transcript Generator?",
-      content: "Video transcripts make content searchable, accessible, and reusable. Use them for SEO content, blog posts, subtitles, study notes, research, accessibility compliance, or simply to read what you'd rather not watch. Our AI handles accents, multiple speakers, and background noise far better than basic auto-captions.",
+      content: "Video transcripts make content searchable, accessible, and reusable. Use them for SEO blog posts, subtitles, study notes, research, accessibility compliance, content repurposing, or simply to read what you'd rather not watch. Our AI handles accents, multiple speakers, music, and background noise far better than basic auto-captions.",
     },
     {
-      title: "Powered by Google Gemini AI",
-      content: "Unlike basic speech-to-text tools, we use Google's Gemini multimodal AI which understands context, punctuation, and natural speech patterns. The result is a transcript that reads like it was written by a human, not garbled by an algorithm.",
+      title: "Powered by Advanced AI Speech Recognition",
+      content: "Unlike basic speech-to-text tools that produce garbled output, our AI understands context, punctuation, and natural speech patterns. The result is a transcript that reads like it was professionally written, complete with proper formatting and language detection.",
     },
     {
       title: "Perfect for Creators, Students & Marketers",
-      content: "Content creators repurpose video into blog posts. Students convert lectures into notes. Marketers extract quotes for social media. Researchers analyze interviews. Whatever your use case, transcripts unlock the value hidden inside video content.",
+      content: "Content creators repurpose videos into blog posts and articles. Students convert lectures into searchable study notes. Marketers extract powerful quotes for social media campaigns. Researchers analyze interviews efficiently. Whatever your use case, transcripts unlock the value hidden inside video content.",
     },
     {
       title: "100% Free, No Signup, No Limits",
-      content: "Most transcription tools charge per minute or lock features behind paywalls. MinusFlow is completely free with no account required. Just paste, transcribe, and download — as many videos as you need.",
+      content: "Most transcription tools charge per minute or hide features behind expensive paywalls. MinusFlow is completely free with no account required. Just paste your URL, solve a quick captcha, and get your transcript — as many videos as you need, every day.",
     },
   ];
 
@@ -153,7 +201,7 @@ const FacebookTranscriptExtractor = () => {
       icon={FileText}
       title="AI Video Transcript"
       highlight="Extractor"
-      subtitle="Transcribe any Facebook, YouTube, TikTok, or Instagram video to text in seconds — powered by Google Gemini AI."
+      subtitle="Transcribe any Facebook, YouTube, TikTok, or Instagram video to text in seconds — free, accurate, and powered by AI."
       badge="✨ Free AI Transcription"
       gradientFrom="from-[#1877F2]"
       gradientTo="to-[#42b72a]"
@@ -163,8 +211,8 @@ const FacebookTranscriptExtractor = () => {
       faqs={faqs}
       seoBlocks={seoBlocks}
     >
-      {/* Input */}
       <div className="space-y-4">
+        {/* Input row */}
         <div className="flex flex-col sm:flex-row gap-3">
           <Input
             placeholder="Paste video URL (Facebook, YouTube, TikTok, Instagram...)"
@@ -176,17 +224,40 @@ const FacebookTranscriptExtractor = () => {
           />
           <Button
             onClick={handleSubmit}
-            disabled={isProcessing}
+            disabled={isProcessing || !captchaToken}
             size="lg"
-            className="gap-2 bg-gradient-to-r from-[#1877F2] to-[#42b72a] hover:opacity-90 text-white h-12 px-8 font-semibold"
+            className="gap-2 bg-gradient-to-r from-[#1877F2] to-[#42b72a] hover:opacity-90 text-white h-12 px-8 font-semibold disabled:opacity-50"
           >
             {isProcessing ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileText className="h-4 w-4" />}
             Transcribe
           </Button>
         </div>
 
-        <div className="flex flex-wrap justify-center gap-2 pt-2">
-          {["Facebook", "YouTube", "TikTok", "Instagram", "Reels", "Shorts"].map((p) => (
+        {/* Captcha */}
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border/40 bg-secondary/20 p-3">
+          <div className="text-xs text-muted-foreground">
+            {captchaToken ? (
+              <span className="flex items-center gap-1.5 text-green-500 font-medium">
+                <CheckCircle2 className="h-4 w-4" /> Captcha verified — ready to transcribe
+              </span>
+            ) : (
+              <span>👉 Solve the captcha to enable the Transcribe button</span>
+            )}
+          </div>
+          <HCaptcha
+            ref={captchaRef}
+            sitekey={HCAPTCHA_SITEKEY}
+            size="compact"
+            theme="dark"
+            onVerify={(token) => setCaptchaToken(token)}
+            onError={() => { setCaptchaToken(null); toast.error("Captcha failed, please retry"); }}
+            onExpire={() => setCaptchaToken(null)}
+          />
+        </div>
+
+        {/* Platform chips */}
+        <div className="flex flex-wrap justify-center gap-2 pt-1">
+          {["Facebook", "YouTube", "TikTok", "Instagram", "SoundCloud", "Reels"].map((p) => (
             <span key={p} className="rounded-full border border-border/60 bg-card/40 px-3 py-1 text-xs text-muted-foreground backdrop-blur-sm">{p}</span>
           ))}
         </div>
@@ -203,11 +274,27 @@ const FacebookTranscriptExtractor = () => {
               <div className="flex items-center justify-between text-sm">
                 <span className="font-medium flex items-center gap-2">
                   <Loader2 className="h-4 w-4 animate-spin text-[#1877F2]" />
-                  {stageLabel}
+                  {stageLabels[stage]}
                 </span>
-                <span className="text-muted-foreground">{progress}%</span>
+                <span className="text-muted-foreground">{stageProgress[stage]}%</span>
               </div>
-              <Progress value={progress} className="h-2" />
+              <Progress value={stageProgress[stage]} className="h-2" />
+
+              {videoInfo && (
+                <div className="flex items-center gap-3 rounded-lg border border-border/40 bg-card/40 p-3 mt-2">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#1877F2]/10">
+                    <Film className="h-5 w-5 text-[#1877F2]" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium text-sm truncate">{videoInfo.title}</p>
+                    {videoInfo.duration > 0 && (
+                      <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
+                        <Clock className="h-3 w-3" /> {formatDuration(videoInfo.duration)}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              )}
             </motion.div>
           )}
         </AnimatePresence>
@@ -229,7 +316,7 @@ const FacebookTranscriptExtractor = () => {
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-3 pt-2">
             <div className="flex flex-wrap items-center gap-3 rounded-xl border border-border/60 bg-secondary/30 p-3">
               <div className="flex-1 flex flex-wrap items-center gap-3 text-xs text-muted-foreground min-w-0">
-                <span className="font-medium text-foreground text-sm truncate max-w-xs">{videoTitle}</span>
+                <span className="font-medium text-foreground text-sm truncate max-w-xs">{videoInfo?.title}</span>
                 <span>•</span>
                 <span>{wordCount.toLocaleString()} words</span>
                 <span>•</span>
