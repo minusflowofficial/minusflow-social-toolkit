@@ -391,13 +391,25 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    // Regular single-video flow
+    // Regular single-video flow — full browser-like header set to reduce
+    // Cloudflare bot challenges from YTDown.
     const proxyHeaders: Record<string, string> = {
+      "User-Agent": BROWSER_USER_AGENT,
+      Accept: "application/json, text/javascript, */*; q=0.01",
+      "Accept-Language": "en-US,en;q=0.9",
+      "Accept-Encoding": "gzip, deflate, br",
+      "Cache-Control": "no-cache",
+      Pragma: "no-cache",
       Origin: "https://app.ytdown.to",
       Referer: "https://app.ytdown.to/en23/",
-      "Content-Type": "application/x-www-form-urlencoded",
+      "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
       "X-Requested-With": "XMLHttpRequest",
-      "User-Agent": BROWSER_USER_AGENT,
+      "Sec-Ch-Ua": '"Google Chrome";v="131", "Chromium";v="131", "Not_A Brand";v="24"',
+      "Sec-Ch-Ua-Mobile": "?0",
+      "Sec-Ch-Ua-Platform": '"Windows"',
+      "Sec-Fetch-Dest": "empty",
+      "Sec-Fetch-Mode": "cors",
+      "Sec-Fetch-Site": "same-origin",
     };
 
     let result: any = null;
