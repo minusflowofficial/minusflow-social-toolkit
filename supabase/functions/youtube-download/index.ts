@@ -327,6 +327,30 @@ const extractPlaylistIdFromUrl = (url: string): string | null => {
   return null;
 };
 
+const extractYouTubeVideoId = (url: string): string | null => {
+  if (/^[a-zA-Z0-9_-]{11}$/.test(url)) return url;
+  try {
+    const parsed = new URL(url);
+    if (parsed.hostname === "youtu.be" || parsed.hostname.endsWith(".youtu.be")) {
+      const id = parsed.pathname.slice(1).split("/")[0];
+      if (/^[a-zA-Z0-9_-]{11}$/.test(id)) return id;
+    }
+    const v = parsed.searchParams.get("v");
+    if (v && /^[a-zA-Z0-9_-]{11}$/.test(v)) return v;
+    const m = parsed.pathname.match(/\/(?:shorts|embed|v)\/([a-zA-Z0-9_-]{11})/);
+    if (m) return m[1];
+  } catch {}
+  return null;
+};
+
+const buildThumbnailUrl = (videoId: string | null, fallback: string): string => {
+  if (videoId) {
+    // hqdefault.jpg always exists for public videos (480x360, no gray box).
+    return `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`;
+  }
+  return fallback;
+};
+
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
