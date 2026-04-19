@@ -39,24 +39,38 @@ const sanitizeFileName = (value: string) => {
 const PUBLIC_FUNCTION_PATH = "/functions/v1/youtube-download";
 
 const isAllowedDownloadHost = (hostname: string) => {
-  return (
+  // Static allowlist of known YTDown infrastructure hosts + Google's CDN.
+  // We also accept any `worker<NN>.com` (or subdomains) since YTDown rotates them.
+  if (
     hostname === "ytcontent.com" ||
     hostname.endsWith(".ytcontent.com") ||
     hostname === "googlevideo.com" ||
     hostname.endsWith(".googlevideo.com") ||
     hostname === "process4.me" ||
     hostname.endsWith(".process4.me")
-  );
+  ) {
+    return true;
+  }
+
+  // Match worker hosts like worker03.com, s23.worker03.com, worker12.com, etc.
+  if (/(^|\.)worker\d+\.com$/i.test(hostname)) {
+    return true;
+  }
+
+  // Final CDN host that serves the prepared file (e.g. dl.iamworker.com).
+  if (hostname === "iamworker.com" || hostname.endsWith(".iamworker.com")) {
+    return true;
+  }
+
+  return false;
 };
 
 const requiresDownloadPreparation = (url: URL) => {
-  const isYtContent = url.hostname === "ytcontent.com" || url.hostname.endsWith(".ytcontent.com");
-  const isProcess4 = url.hostname === "process4.me" || url.hostname.endsWith(".process4.me");
-
-  if (!isYtContent && !isProcess4) {
+  if (!isAllowedDownloadHost(url.hostname)) return false;
+  // Google CDN serves the final file directly — no preparation needed.
+  if (url.hostname === "googlevideo.com" || url.hostname.endsWith(".googlevideo.com")) {
     return false;
   }
-
   return url.pathname.startsWith("/v5/video/") || url.pathname.startsWith("/v5/audio/");
 };
 
@@ -318,6 +332,30 @@ const extractPlaylistIdFromUrl = (url: string): string | null => {
   return null;
 };
 
+const extractYouTubeVideoId = (url: string): string | null => {
+  if (/^[a-zA-Z0-9_-]{11}$/.test(url)) return url;
+  try {
+    const parsed = new URL(url);
+    if (parsed.hostname === "youtu.be" || parsed.hostname.endsWith(".youtu.be")) {
+      const id = parsed.pathname.slice(1).split("/")[0];
+      if (/^[a-zA-Z0-9_-]{11}$/.test(id)) return id;
+    }
+    const v = parsed.searchParams.get("v");
+    if (v && /^[a-zA-Z0-9_-]{11}$/.test(v)) return v;
+    const m = parsed.pathname.match(/\/(?:shorts|embed|v)\/([a-zA-Z0-9_-]{11})/);
+    if (m) return m[1];
+  } catch {}
+  return null;
+};
+
+const buildThumbnailUrl = (videoId: string | null, fallback: string): string => {
+  if (videoId) {
+    // hqdefault.jpg always exists for public videos (480x360, no gray box).
+    return `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`;
+  }
+  return fallback;
+};
+
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
@@ -387,7 +425,11 @@ Deno.serve(async (req: Request) => {
 
     const api = result.api;
     const title = api.title || "";
-    const thumbnail = api.imagePreviewUrl || api.previewUrl || "";
+    const videoId = extractYouTubeVideoId(url);
+    const thumbnail = buildThumbnailUrl(
+      videoId,
+      api.imagePreviewUrl || api.previewUrl || "",
+    );
     const mediaItems = (api.mediaItems || []).map((item: any) => {
         const mediaQuality = normalizeMediaValue(item.mediaQuality);
         const mediaRes = normalizeMediaValue(item.mediaRes);
