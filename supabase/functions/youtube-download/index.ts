@@ -426,7 +426,7 @@ Deno.serve(async (req: Request) => {
         });
       } catch (fetchErr) {
         console.error("ytdown fetch failed:", fetchErr);
-        await sleep(RETRY_DELAY);
+        await sleep(RETRY_DELAY + Math.floor(Math.random() * 500));
         continue;
       }
 
@@ -434,14 +434,16 @@ Deno.serve(async (req: Request) => {
       try {
         result = JSON.parse(text);
       } catch {
-        // Upstream returned HTML (Cloudflare block, maintenance, rate-limit, etc.)
+        // Upstream returned HTML — usually a Cloudflare bot challenge.
+        // Back off with jitter; CF challenges typically clear within a few seconds.
         lastNonJsonSnippet = text.slice(0, 200);
         console.error(
-          `ytdown non-JSON response (status ${resp.status}):`,
-          lastNonJsonSnippet,
+          `ytdown non-JSON response (status ${resp.status}, attempt ${attempt + 1}/${MAX_RETRIES})`,
         );
         result = null;
-        await sleep(RETRY_DELAY);
+        const backoff = Math.min(1000 * Math.pow(1.5, attempt), 6000) +
+          Math.floor(Math.random() * 600);
+        await sleep(backoff);
         continue;
       }
 
