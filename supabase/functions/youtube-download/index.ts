@@ -458,8 +458,7 @@ Deno.serve(async (req: Request) => {
       return createJsonResponse(
         {
           error:
-            "Video service is temporarily unavailable. Please try again in a moment." +
-            (lastNonJsonSnippet ? ` (upstream: ${lastNonJsonSnippet.slice(0, 80)})` : ""),
+            "YouTube service is busy right now. Please wait a few seconds and try again.",
         },
         503,
       );
