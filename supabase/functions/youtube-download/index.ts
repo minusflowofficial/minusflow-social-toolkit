@@ -7,10 +7,10 @@ const corsHeaders = {
     "Content-Disposition, Content-Length, Content-Type",
 };
 
-const MAX_RETRIES = 4;
+const MAX_RETRIES = 3;
 const RETRY_DELAY = 1200;
 const DOWNLOAD_PROXY_RESOLVE_RETRIES = 2;
-const UPSTREAM_TIMEOUT = 12000;
+const UPSTREAM_TIMEOUT = 7000;
 const SESSION_BOOTSTRAP_URL = "https://app.ytdown.to/en23/";
 const BROWSER_USER_AGENT =
   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36";
