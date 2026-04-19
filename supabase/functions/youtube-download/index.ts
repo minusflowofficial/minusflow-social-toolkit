@@ -57,6 +57,11 @@ const isAllowedDownloadHost = (hostname: string) => {
     return true;
   }
 
+  // Final CDN host that serves the prepared file (e.g. dl.iamworker.com).
+  if (hostname === "iamworker.com" || hostname.endsWith(".iamworker.com")) {
+    return true;
+  }
+
   return false;
 };
 
