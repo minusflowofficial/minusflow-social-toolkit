@@ -7,13 +7,29 @@ const corsHeaders = {
     "Content-Disposition, Content-Length, Content-Type",
 };
 
-const MAX_RETRIES = 12;
-const RETRY_DELAY = 1500;
+const MAX_RETRIES = 2;
+const RETRY_DELAY = 1200;
 const DOWNLOAD_PROXY_RESOLVE_RETRIES = 2;
+const UPSTREAM_TIMEOUT = 5000;
+const SESSION_BOOTSTRAP_URL = "https://app.ytdown.to/en23/";
 const BROWSER_USER_AGENT =
   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36";
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+const fetchWithTimeout = async (input: string | URL | Request, init: RequestInit = {}) => {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), UPSTREAM_TIMEOUT);
+
+  try {
+    return await fetch(input, {
+      ...init,
+      signal: controller.signal,
+    });
+  } finally {
+    clearTimeout(timeoutId);
+  }
+};
 
 type ResolvedDownloadPayload = {
   fileUrl: string;
@@ -100,6 +116,27 @@ const buildDownloadUrl = (req: Request, sourceUrl: string, fileName: string) => 
   return downloadUrl.toString();
 };
 
+const getYtDownSessionCookie = async () => {
+  try {
+    const response = await fetchWithTimeout(SESSION_BOOTSTRAP_URL, {
+      headers: {
+        "User-Agent": BROWSER_USER_AGENT,
+        "Accept-Language": "en-US,en;q=0.9",
+      },
+    });
+
+    const setCookie = response.headers.get("set-cookie") || "";
+    const sessionCookie = setCookie
+      .split(",")
+      .map((value) => value.trim())
+      .find((value) => value.startsWith("PHPSESSID="));
+
+    return sessionCookie ? sessionCookie.split(";")[0] : "";
+  } catch {
+    return "";
+  }
+};
+
 const resolveDownloadPayload = async (
   mediaUrl: string,
   maxRetries = MAX_RETRIES,
@@ -111,7 +148,7 @@ const resolveDownloadPayload = async (
   for (let attempt = 0; attempt < maxRetries; attempt++) {
     let response: Response;
     try {
-      response = await fetch(mediaUrl, {
+        response = await fetchWithTimeout(mediaUrl, {
         method: "HEAD",
         headers: { "User-Agent": BROWSER_USER_AGENT },
       });
@@ -133,7 +170,7 @@ const resolveDownloadPayload = async (
     // Some endpoints only return status via GET JSON; try GET for JSON endpoints
     if (response.ok || response.status === 425 || response.status === 202) {
       try {
-        const getResp = await fetch(mediaUrl, {
+          const getResp = await fetchWithTimeout(mediaUrl, {
           headers: { "User-Agent": BROWSER_USER_AGENT },
         });
         const result = await parseJsonResponse(getResp);
@@ -255,7 +292,7 @@ const proxyDownload = async (req: Request) => {
   const downloadFileName = sanitizeFileName(
     resolvedFileName || upstreamUrl.pathname.split("/").pop() || "",
   );
-  const upstreamResponse = await fetch(upstreamUrl.toString(), {
+  const upstreamResponse = await fetchWithTimeout(upstreamUrl.toString(), {
     method: req.method,
     headers: {
       "User-Agent": BROWSER_USER_AGENT,
@@ -414,14 +451,17 @@ Deno.serve(async (req: Request) => {
 
     let result: any = null;
     let lastNonJsonSnippet = "";
+    const sessionCookie = await getYtDownSessionCookie();
 
     for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
       const body = new URLSearchParams({ url });
       let resp: Response;
       try {
-        resp = await fetch("https://app.ytdown.to/proxy.php", {
+        resp = await fetchWithTimeout("https://app.ytdown.to/proxy.php", {
           method: "POST",
-          headers: proxyHeaders,
+          headers: sessionCookie
+            ? { ...proxyHeaders, Cookie: sessionCookie }
+            : proxyHeaders,
           body: body.toString(),
         });
       } catch (fetchErr) {
@@ -447,6 +487,12 @@ Deno.serve(async (req: Request) => {
         continue;
       }
 
+      if (result?.api?.status === "error" && result?.api?.code === 429) {
+        result = null;
+        await sleep(RETRY_DELAY + Math.floor(Math.random() * 500));
+        continue;
+      }
+
       if (result?.status !== "queued") {
         break;
       }
@@ -458,7 +504,7 @@ Deno.serve(async (req: Request) => {
       return createJsonResponse(
         {
           error:
-            "YouTube service is busy right now. Please wait a few seconds and try again.",
+            "YouTube provider is temporarily busy. Please retry in a few seconds.",
         },
         503,
       );

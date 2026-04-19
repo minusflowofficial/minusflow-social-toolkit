@@ -1,3 +1,4 @@
+import { forwardRef } from "react";
 import { motion } from "framer-motion";
 import { Heart } from "lucide-react";
 import { Link } from "react-router-dom";
@@ -12,8 +13,9 @@ const footerLinks = [
   { to: "/disclaimer", label: "Disclaimer" },
 ];
 
-const Footer = () => (
+const Footer = forwardRef<HTMLElement>((_, ref) => (
   <motion.footer
+    ref={ref}
     initial={{ opacity: 0 }}
     whileInView={{ opacity: 1 }}
     viewport={{ once: true }}
@@ -56,6 +58,8 @@ const Footer = () => (
       </p>
     </div>
   </motion.footer>
-);
+));
+
+Footer.displayName = "Footer";
 
 export default Footer;
