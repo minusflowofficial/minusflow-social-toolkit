@@ -7,11 +7,11 @@ const corsHeaders = {
     "Content-Disposition, Content-Length, Content-Type",
 };
 
-const MAX_RETRIES = 10;
-const RETRY_DELAY = 2000;
+const MAX_RETRIES = 12;
+const RETRY_DELAY = 1500;
 const DOWNLOAD_PROXY_RESOLVE_RETRIES = 2;
 const BROWSER_USER_AGENT =
-  "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36";
+  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36";
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
