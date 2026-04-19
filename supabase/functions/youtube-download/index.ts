@@ -451,14 +451,17 @@ Deno.serve(async (req: Request) => {
 
     let result: any = null;
     let lastNonJsonSnippet = "";
+    const sessionCookie = await getYtDownSessionCookie();
 
     for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
       const body = new URLSearchParams({ url });
       let resp: Response;
       try {
-        resp = await fetch("https://app.ytdown.to/proxy.php", {
+        resp = await fetchWithTimeout("https://app.ytdown.to/proxy.php", {
           method: "POST",
-          headers: proxyHeaders,
+          headers: sessionCookie
+            ? { ...proxyHeaders, Cookie: sessionCookie }
+            : proxyHeaders,
           body: body.toString(),
         });
       } catch (fetchErr) {
@@ -484,6 +487,12 @@ Deno.serve(async (req: Request) => {
         continue;
       }
 
+      if (result?.api?.status === "error" && result?.api?.code === 429) {
+        result = null;
+        await sleep(RETRY_DELAY + Math.floor(Math.random() * 500));
+        continue;
+      }
+
       if (result?.status !== "queued") {
         break;
       }
@@ -495,7 +504,7 @@ Deno.serve(async (req: Request) => {
       return createJsonResponse(
         {
           error:
-            "YouTube service is busy right now. Please wait a few seconds and try again.",
+            "YouTube provider is temporarily busy. Please retry in a few seconds.",
         },
         503,
       );
