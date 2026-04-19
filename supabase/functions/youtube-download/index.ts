@@ -7,11 +7,11 @@ const corsHeaders = {
     "Content-Disposition, Content-Length, Content-Type",
 };
 
-const MAX_RETRIES = 10;
-const RETRY_DELAY = 2000;
+const MAX_RETRIES = 12;
+const RETRY_DELAY = 1500;
 const DOWNLOAD_PROXY_RESOLVE_RETRIES = 2;
 const BROWSER_USER_AGENT =
-  "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36";
+  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36";
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -391,13 +391,25 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    // Regular single-video flow
+    // Regular single-video flow — full browser-like header set to reduce
+    // Cloudflare bot challenges from YTDown.
     const proxyHeaders: Record<string, string> = {
+      "User-Agent": BROWSER_USER_AGENT,
+      Accept: "application/json, text/javascript, */*; q=0.01",
+      "Accept-Language": "en-US,en;q=0.9",
+      "Accept-Encoding": "gzip, deflate, br",
+      "Cache-Control": "no-cache",
+      Pragma: "no-cache",
       Origin: "https://app.ytdown.to",
       Referer: "https://app.ytdown.to/en23/",
-      "Content-Type": "application/x-www-form-urlencoded",
+      "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
       "X-Requested-With": "XMLHttpRequest",
-      "User-Agent": BROWSER_USER_AGENT,
+      "Sec-Ch-Ua": '"Google Chrome";v="131", "Chromium";v="131", "Not_A Brand";v="24"',
+      "Sec-Ch-Ua-Mobile": "?0",
+      "Sec-Ch-Ua-Platform": '"Windows"',
+      "Sec-Fetch-Dest": "empty",
+      "Sec-Fetch-Mode": "cors",
+      "Sec-Fetch-Site": "same-origin",
     };
 
     let result: any = null;
@@ -414,7 +426,7 @@ Deno.serve(async (req: Request) => {
         });
       } catch (fetchErr) {
         console.error("ytdown fetch failed:", fetchErr);
-        await sleep(RETRY_DELAY);
+        await sleep(RETRY_DELAY + Math.floor(Math.random() * 500));
         continue;
       }
 
@@ -422,14 +434,16 @@ Deno.serve(async (req: Request) => {
       try {
         result = JSON.parse(text);
       } catch {
-        // Upstream returned HTML (Cloudflare block, maintenance, rate-limit, etc.)
+        // Upstream returned HTML — usually a Cloudflare bot challenge.
+        // Back off with jitter; CF challenges typically clear within a few seconds.
         lastNonJsonSnippet = text.slice(0, 200);
         console.error(
-          `ytdown non-JSON response (status ${resp.status}):`,
-          lastNonJsonSnippet,
+          `ytdown non-JSON response (status ${resp.status}, attempt ${attempt + 1}/${MAX_RETRIES})`,
         );
         result = null;
-        await sleep(RETRY_DELAY);
+        const backoff = Math.min(1000 * Math.pow(1.5, attempt), 6000) +
+          Math.floor(Math.random() * 600);
+        await sleep(backoff);
         continue;
       }
 
@@ -444,8 +458,7 @@ Deno.serve(async (req: Request) => {
       return createJsonResponse(
         {
           error:
-            "Video service is temporarily unavailable. Please try again in a moment." +
-            (lastNonJsonSnippet ? ` (upstream: ${lastNonJsonSnippet.slice(0, 80)})` : ""),
+            "YouTube service is busy right now. Please wait a few seconds and try again.",
         },
         503,
       );
