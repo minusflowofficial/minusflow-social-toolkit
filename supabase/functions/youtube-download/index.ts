@@ -7,13 +7,29 @@ const corsHeaders = {
     "Content-Disposition, Content-Length, Content-Type",
 };
 
-const MAX_RETRIES = 12;
-const RETRY_DELAY = 1500;
+const MAX_RETRIES = 4;
+const RETRY_DELAY = 1200;
 const DOWNLOAD_PROXY_RESOLVE_RETRIES = 2;
+const UPSTREAM_TIMEOUT = 12000;
+const SESSION_BOOTSTRAP_URL = "https://app.ytdown.to/en23/";
 const BROWSER_USER_AGENT =
   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36";
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+const fetchWithTimeout = async (input: string | URL | Request, init: RequestInit = {}) => {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), UPSTREAM_TIMEOUT);
+
+  try {
+    return await fetch(input, {
+      ...init,
+      signal: controller.signal,
+    });
+  } finally {
+    clearTimeout(timeoutId);
+  }
+};
 
 type ResolvedDownloadPayload = {
   fileUrl: string;
@@ -98,6 +114,27 @@ const buildDownloadUrl = (req: Request, sourceUrl: string, fileName: string) => 
   downloadUrl.searchParams.set("source", sourceUrl);
   downloadUrl.searchParams.set("fileName", fileName);
   return downloadUrl.toString();
+};
+
+const getYtDownSessionCookie = async () => {
+  try {
+    const response = await fetchWithTimeout(SESSION_BOOTSTRAP_URL, {
+      headers: {
+        "User-Agent": BROWSER_USER_AGENT,
+        "Accept-Language": "en-US,en;q=0.9",
+      },
+    });
+
+    const setCookie = response.headers.get("set-cookie") || "";
+    const sessionCookie = setCookie
+      .split(",")
+      .map((value) => value.trim())
+      .find((value) => value.startsWith("PHPSESSID="));
+
+    return sessionCookie ? sessionCookie.split(";")[0] : "";
+  } catch {
+    return "";
+  }
 };
 
 const resolveDownloadPayload = async (
