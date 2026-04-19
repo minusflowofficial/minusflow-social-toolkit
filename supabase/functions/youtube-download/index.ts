@@ -148,7 +148,7 @@ const resolveDownloadPayload = async (
   for (let attempt = 0; attempt < maxRetries; attempt++) {
     let response: Response;
     try {
-      response = await fetch(mediaUrl, {
+        response = await fetchWithTimeout(mediaUrl, {
         method: "HEAD",
         headers: { "User-Agent": BROWSER_USER_AGENT },
       });
@@ -170,7 +170,7 @@ const resolveDownloadPayload = async (
     // Some endpoints only return status via GET JSON; try GET for JSON endpoints
     if (response.ok || response.status === 425 || response.status === 202) {
       try {
-        const getResp = await fetch(mediaUrl, {
+          const getResp = await fetchWithTimeout(mediaUrl, {
           headers: { "User-Agent": BROWSER_USER_AGENT },
         });
         const result = await parseJsonResponse(getResp);
@@ -292,7 +292,7 @@ const proxyDownload = async (req: Request) => {
   const downloadFileName = sanitizeFileName(
     resolvedFileName || upstreamUrl.pathname.split("/").pop() || "",
   );
-  const upstreamResponse = await fetch(upstreamUrl.toString(), {
+  const upstreamResponse = await fetchWithTimeout(upstreamUrl.toString(), {
     method: req.method,
     headers: {
       "User-Agent": BROWSER_USER_AGENT,
