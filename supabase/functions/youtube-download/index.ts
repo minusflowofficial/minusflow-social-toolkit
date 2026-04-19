@@ -401,16 +401,37 @@ Deno.serve(async (req: Request) => {
     };
 
     let result: any = null;
+    let lastNonJsonSnippet = "";
 
     for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
       const body = new URLSearchParams({ url });
-      const resp = await fetch("https://app.ytdown.to/proxy.php", {
-        method: "POST",
-        headers: proxyHeaders,
-        body: body.toString(),
-      });
+      let resp: Response;
+      try {
+        resp = await fetch("https://app.ytdown.to/proxy.php", {
+          method: "POST",
+          headers: proxyHeaders,
+          body: body.toString(),
+        });
+      } catch (fetchErr) {
+        console.error("ytdown fetch failed:", fetchErr);
+        await sleep(RETRY_DELAY);
+        continue;
+      }
 
-      result = await resp.json();
+      const text = await resp.text();
+      try {
+        result = JSON.parse(text);
+      } catch {
+        // Upstream returned HTML (Cloudflare block, maintenance, rate-limit, etc.)
+        lastNonJsonSnippet = text.slice(0, 200);
+        console.error(
+          `ytdown non-JSON response (status ${resp.status}):`,
+          lastNonJsonSnippet,
+        );
+        result = null;
+        await sleep(RETRY_DELAY);
+        continue;
+      }
 
       if (result?.status !== "queued") {
         break;
@@ -420,7 +441,14 @@ Deno.serve(async (req: Request) => {
     }
 
     if (!result || !result.api) {
-      return createJsonResponse({ error: "Failed to fetch video info" }, 502);
+      return createJsonResponse(
+        {
+          error:
+            "Video service is temporarily unavailable. Please try again in a moment." +
+            (lastNonJsonSnippet ? ` (upstream: ${lastNonJsonSnippet.slice(0, 80)})` : ""),
+        },
+        503,
+      );
     }
 
     const api = result.api;
