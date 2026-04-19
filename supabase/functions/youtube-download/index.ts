@@ -39,24 +39,33 @@ const sanitizeFileName = (value: string) => {
 const PUBLIC_FUNCTION_PATH = "/functions/v1/youtube-download";
 
 const isAllowedDownloadHost = (hostname: string) => {
-  return (
+  // Static allowlist of known YTDown infrastructure hosts + Google's CDN.
+  // We also accept any `worker<NN>.com` (or subdomains) since YTDown rotates them.
+  if (
     hostname === "ytcontent.com" ||
     hostname.endsWith(".ytcontent.com") ||
     hostname === "googlevideo.com" ||
     hostname.endsWith(".googlevideo.com") ||
     hostname === "process4.me" ||
     hostname.endsWith(".process4.me")
-  );
+  ) {
+    return true;
+  }
+
+  // Match worker hosts like worker03.com, s23.worker03.com, worker12.com, etc.
+  if (/(^|\.)worker\d+\.com$/i.test(hostname)) {
+    return true;
+  }
+
+  return false;
 };
 
 const requiresDownloadPreparation = (url: URL) => {
-  const isYtContent = url.hostname === "ytcontent.com" || url.hostname.endsWith(".ytcontent.com");
-  const isProcess4 = url.hostname === "process4.me" || url.hostname.endsWith(".process4.me");
-
-  if (!isYtContent && !isProcess4) {
+  if (!isAllowedDownloadHost(url.hostname)) return false;
+  // Google CDN serves the final file directly — no preparation needed.
+  if (url.hostname === "googlevideo.com" || url.hostname.endsWith(".googlevideo.com")) {
     return false;
   }
-
   return url.pathname.startsWith("/v5/video/") || url.pathname.startsWith("/v5/audio/");
 };
 
