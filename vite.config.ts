@@ -5,6 +5,8 @@ import { componentTagger } from "lovable-tagger";
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
+  // Relative base — taake build kahin bhi (root ya subfolder) chal sake (Hostinger / WordPress / static host)
+  base: "./",
   server: {
     host: "::",
     port: 8080,
