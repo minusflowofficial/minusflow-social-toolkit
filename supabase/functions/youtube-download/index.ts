@@ -420,7 +420,11 @@ Deno.serve(async (req: Request) => {
 
     const api = result.api;
     const title = api.title || "";
-    const thumbnail = api.imagePreviewUrl || api.previewUrl || "";
+    const videoId = extractYouTubeVideoId(url);
+    const thumbnail = buildThumbnailUrl(
+      videoId,
+      api.imagePreviewUrl || api.previewUrl || "",
+    );
     const mediaItems = (api.mediaItems || []).map((item: any) => {
         const mediaQuality = normalizeMediaValue(item.mediaQuality);
         const mediaRes = normalizeMediaValue(item.mediaRes);
