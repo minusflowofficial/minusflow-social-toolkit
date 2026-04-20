@@ -1,34 +1,52 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { supabase } from "@/integrations/supabase/client";
 import {
   ListVideo, Loader2, CheckCircle2, XCircle, Download, Trash2,
-  ChevronDown, ChevronUp, Settings2, Play
+  ChevronDown, ChevronUp, Settings2, Play, AlertCircle
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 
 import { triggerBatchDownloads, triggerDownload } from "@/lib/download-manager";
+import { fetchAndNormalize, type NormalizedFormat } from "@/lib/youtube-api";
 
-interface PlaylistFormat {
-  formatId: string;
-  quality: string;
-  extension: string;
-  size: string;
-  url: string;
-  fileName?: string;
-}
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 interface PlaylistVideoItem {
   url: string;
   status: "pending" | "fetching" | "done" | "error";
   title?: string;
   thumbnail?: string;
-  formats?: PlaylistFormat[];
+  formats?: NormalizedFormat[];
   selectedFormat?: number;
   expanded?: boolean;
   error?: string;
 }
+
+const extractPlaylistId = (url: string): string | null => {
+  try {
+    const parsed = new URL(url);
+    const listParam = parsed.searchParams.get("list");
+    if (listParam) return listParam;
+  } catch {}
+  if (/^PL[a-zA-Z0-9_-]+$/.test(url)) return url;
+  return null;
+};
+
+const extractVideoIds = (text: string): string[] => {
+  const ids = new Set<string>();
+  // youtu.be/ID, youtube.com/watch?v=ID, /shorts/ID, /embed/ID, bare 11-char IDs
+  const patterns = [
+    /(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|shorts\/|embed\/|v\/))([A-Za-z0-9_-]{11})/g,
+    /[?&]v=([A-Za-z0-9_-]{11})/g,
+    /^([A-Za-z0-9_-]{11})$/gm,
+  ];
+  for (const re of patterns) {
+    let m: RegExpExecArray | null;
+    while ((m = re.exec(text)) !== null) ids.add(m[1]);
+  }
+  return Array.from(ids);
+};
 
 const PlaylistDownload = () => {
   const [playlistUrl, setPlaylistUrl] = useState("");
@@ -36,15 +54,57 @@ const PlaylistDownload = () => {
   const [processing, setProcessing] = useState(false);
   const [showPlaylist, setShowPlaylist] = useState(false);
   const [extracting, setExtracting] = useState(false);
+  const [showFallback, setShowFallback] = useState(false);
+  const [fallbackText, setFallbackText] = useState("");
 
-  const extractPlaylistId = (url: string): string | null => {
-    try {
-      const parsed = new URL(url);
-      const listParam = parsed.searchParams.get("list");
-      if (listParam) return listParam;
-    } catch {}
-    if (/^PL[a-zA-Z0-9_-]+$/.test(url)) return url;
-    return null;
+  const startProcessingUrls = async (urls: string[]) => {
+    if (urls.length === 0) {
+      toast.error("No videos to process");
+      return;
+    }
+
+    const items: PlaylistVideoItem[] = urls.map((u) => ({
+      url: u,
+      status: "pending",
+      selectedFormat: 0,
+    }));
+    setVideos(items);
+    setProcessing(true);
+
+    for (let i = 0; i < items.length; i++) {
+      setVideos((prev) =>
+        prev.map((v, idx) => (idx === i ? { ...v, status: "fetching" } : v))
+      );
+
+      try {
+        const result = await fetchAndNormalize(items[i].url);
+        setVideos((prev) =>
+          prev.map((v, idx) =>
+            idx === i
+              ? {
+                  ...v,
+                  status: "done",
+                  title: result.title,
+                  thumbnail: result.thumbnail,
+                  formats: result.mediaItems,
+                  selectedFormat: 0,
+                }
+              : v
+          )
+        );
+      } catch (err: any) {
+        setVideos((prev) =>
+          prev.map((v, idx) =>
+            idx === i ? { ...v, status: "error", error: err.message || "Failed" } : v
+          )
+        );
+      }
+
+      if (i < items.length - 1) await sleep(1200);
+    }
+
+    setProcessing(false);
+    toast.success("Playlist fetch completed!");
   };
 
   const handleFetchPlaylist = async () => {
@@ -56,78 +116,55 @@ const PlaylistDownload = () => {
 
     setExtracting(true);
     setVideos([]);
+    setShowFallback(false);
 
     try {
-      // Step 1: Extract video URLs from playlist
-      const { data: playlistData, error: playlistError } = await supabase.functions.invoke(
-        "youtube-download",
-        { body: { url: playlistUrl.trim(), action: "extract_playlist" } }
+      // Try lemnoslife free YouTube Data proxy
+      const resp = await fetch(
+        `https://yt.lemnoslife.com/noKey/playlistItems?part=snippet&playlistId=${encodeURIComponent(pid)}&maxResults=50`
       );
 
-      if (playlistError) throw playlistError;
-      if (!playlistData?.videoUrls?.length) {
-        toast.error("No videos found in this playlist");
-        setExtracting(false);
-        return;
-      }
+      if (!resp.ok) throw new Error(`Playlist API error ${resp.status}`);
+      const json = await resp.json();
+      const items: any[] = json?.items || [];
+      const videoIds: string[] = items
+        .map((it) => it?.snippet?.resourceId?.videoId)
+        .filter((id): id is string => typeof id === "string" && id.length === 11);
 
-      toast.success(`Found ${playlistData.videoUrls.length} videos in playlist!`);
+      if (videoIds.length === 0) throw new Error("No videos found");
 
-      // Step 2: Create items and fetch each video
-      const items: PlaylistVideoItem[] = playlistData.videoUrls.map((vUrl: string) => ({
-        url: vUrl,
-        status: "pending" as const,
-        selectedFormat: 0,
-      }));
-      setVideos(items);
+      const urls = videoIds.map((id) => `https://www.youtube.com/watch?v=${id}`);
+      toast.success(`Found ${urls.length} videos in playlist!`);
       setExtracting(false);
-      setProcessing(true);
-
-      // Fetch each video sequentially
-      for (let i = 0; i < items.length; i++) {
-        setVideos((prev) =>
-          prev.map((v, idx) => (idx === i ? { ...v, status: "fetching" } : v))
-        );
-
-        try {
-          const { data, error } = await supabase.functions.invoke("youtube-download", {
-            body: { url: items[i].url },
-          });
-          if (error) throw error;
-          if (!data?.mediaItems?.length) throw new Error("No formats found");
-
-          setVideos((prev) =>
-            prev.map((v, idx) =>
-              idx === i
-                ? { ...v, status: "done", title: data.title, thumbnail: data.thumbnail, formats: data.mediaItems, selectedFormat: 0 }
-                : v
-            )
-          );
-        } catch (err: any) {
-          setVideos((prev) =>
-            prev.map((v, idx) =>
-              idx === i ? { ...v, status: "error", error: err.message || "Failed" } : v
-            )
-          );
-        }
-      }
-
-      setProcessing(false);
-      toast.success("Playlist fetch completed!");
+      await startProcessingUrls(urls);
     } catch (err: any) {
-      toast.error(err.message || "Failed to extract playlist");
+      console.warn("Playlist auto-extract failed:", err);
       setExtracting(false);
+      setShowFallback(true);
+      toast.message("Could not auto-load playlist", {
+        description: "Please paste the individual video URLs below.",
+      });
     }
   };
 
-
-
+  const handleFallbackSubmit = async () => {
+    const ids = extractVideoIds(fallbackText);
+    if (ids.length === 0) {
+      toast.error("No valid YouTube video URLs found");
+      return;
+    }
+    const urls = ids.map((id) => `https://www.youtube.com/watch?v=${id}`);
+    setShowFallback(false);
+    await startProcessingUrls(urls);
+  };
 
   const clearAll = () => {
     setVideos([]);
     setPlaylistUrl("");
     setProcessing(false);
     setExtracting(false);
+    setShowFallback(false);
+    setFallbackText("");
   };
 
   const toggleExpand = (index: number) => {
@@ -246,9 +283,8 @@ const PlaylistDownload = () => {
           </button>
         </div>
 
-        {videos.length === 0 && !extracting && !processing ? (
+        {videos.length === 0 && !extracting && !processing && !showFallback ? (
           <div className="space-y-3">
-            {/* Playlist URL input */}
             <div className="flex gap-2">
               <input
                 value={playlistUrl}
@@ -264,21 +300,54 @@ const PlaylistDownload = () => {
                 className="h-10 rounded-lg px-4 text-xs font-semibold"
               >
                 <Play className="h-3.5 w-3.5 mr-1.5" />
-                Fetch
+                Load Playlist
               </Button>
             </div>
             <p className="text-[10px] text-muted-foreground text-center">
-              Paste any YouTube playlist URL — all videos will be extracted automatically
+              Paste any YouTube playlist URL — videos will be extracted automatically (up to 50)
             </p>
           </div>
         ) : extracting ? (
           <div className="flex items-center justify-center gap-3 py-8">
             <Loader2 className="h-5 w-5 animate-spin text-primary" />
-            <span className="text-sm text-muted-foreground">Extracting playlist videos...</span>
+            <span className="text-sm text-muted-foreground">Loading playlist videos...</span>
+          </div>
+        ) : showFallback ? (
+          <div className="space-y-3">
+            <div className="flex items-start gap-2 rounded-lg border border-amber-500/20 bg-amber-500/5 p-3">
+              <AlertCircle className="h-4 w-4 flex-shrink-0 text-amber-500 mt-0.5" />
+              <div className="text-xs text-muted-foreground">
+                Auto-loading failed. Open the playlist on YouTube, copy the individual video URLs and paste them below (one per line).
+              </div>
+            </div>
+            <textarea
+              value={fallbackText}
+              onChange={(e) => setFallbackText(e.target.value)}
+              placeholder={"https://www.youtube.com/watch?v=...\nhttps://youtu.be/..."}
+              className="glass w-full rounded-lg p-3 text-sm text-foreground placeholder:text-muted-foreground/50 outline-none resize-none"
+              rows={6}
+            />
+            <div className="flex justify-between items-center">
+              <span className="text-xs text-muted-foreground">
+                {extractVideoIds(fallbackText).length} valid video{extractVideoIds(fallbackText).length !== 1 ? "s" : ""} detected
+              </span>
+              <div className="flex gap-2">
+                <Button onClick={clearAll} variant="ghost" size="sm" className="h-9 text-xs text-muted-foreground">
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handleFallbackSubmit}
+                  disabled={extractVideoIds(fallbackText).length === 0}
+                  size="sm"
+                  className="h-9 rounded-lg px-4 text-xs font-semibold"
+                >
+                  Fetch Videos
+                </Button>
+              </div>
+            </div>
           </div>
         ) : (
           <>
-            {/* Video list */}
             <div className="space-y-2 max-h-[500px] overflow-y-auto pr-1">
               {videos.map((item, i) => (
                 <motion.div
@@ -289,12 +358,10 @@ const PlaylistDownload = () => {
                   className="glass rounded-lg overflow-hidden"
                 >
                   <div className="flex items-center gap-3 p-3">
-                    {/* Index number */}
                     <span className="flex-shrink-0 text-[10px] font-bold text-muted-foreground/50 w-4 text-right">
                       {i + 1}
                     </span>
 
-                    {/* Status */}
                     <div className="flex-shrink-0">
                       {item.status === "pending" && <div className="h-5 w-5 rounded-full border-2 border-muted-foreground/30" />}
                       {item.status === "fetching" && <Loader2 className="h-5 w-5 animate-spin text-primary" />}
@@ -302,11 +369,10 @@ const PlaylistDownload = () => {
                       {item.status === "error" && <XCircle className="h-5 w-5 text-destructive" />}
                     </div>
 
-                    {/* Info */}
                     <div className="flex-1 min-w-0">
                       {item.thumbnail && item.status === "done" ? (
                         <div className="flex items-center gap-2">
-                          <img src={item.thumbnail} alt="" className="h-10 w-16 flex-shrink-0 rounded object-cover" />
+                          <img src={item.thumbnail} alt="" loading="lazy" className="h-10 w-16 flex-shrink-0 rounded object-cover" />
                           <div className="min-w-0 flex-1">
                             <p className="truncate text-xs font-medium text-foreground">{item.title || "Untitled"}</p>
                             <p className="text-[10px] text-muted-foreground">
@@ -321,7 +387,6 @@ const PlaylistDownload = () => {
                       )}
                     </div>
 
-                    {/* Actions */}
                     {item.status === "done" && item.formats?.length && (
                       <div className="flex items-center gap-1 flex-shrink-0">
                         <button
@@ -340,7 +405,6 @@ const PlaylistDownload = () => {
                     )}
                   </div>
 
-                  {/* Format picker */}
                   <AnimatePresence>
                     {item.expanded && item.formats && (
                       <motion.div
@@ -379,7 +443,6 @@ const PlaylistDownload = () => {
               ))}
             </div>
 
-            {/* Global format selector */}
             {!processing && videos.some((v) => v.status === "done") && (
               <div className="mt-3 flex flex-wrap items-center gap-2 rounded-lg border border-border/20 bg-muted/5 p-2.5">
                 <Settings2 className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
@@ -397,7 +460,6 @@ const PlaylistDownload = () => {
               </div>
             )}
 
-            {/* Actions bar */}
             <div className="mt-2 flex items-center justify-between">
               <span className="text-xs text-muted-foreground">
                 {videos.filter((v) => v.status === "done").length}/{videos.length} completed
