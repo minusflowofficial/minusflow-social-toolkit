@@ -1,21 +1,14 @@
 import { useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { supabase } from "@/integrations/supabase/client";
 import { Search, Loader2, Youtube, Zap, Shield, Globe, Film, Headphones, MonitorPlay } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import FormatCard from "@/components/FormatCard";
 import ToolPageLayout from "@/components/ToolPageLayout";
 import { trackToolUsage } from "@/lib/analytics";
+import { fetchAndNormalize, type NormalizedFormat } from "@/lib/youtube-api";
 import { toast } from "sonner";
 
-interface MediaItem {
-  formatId: string;
-  quality: string;
-  extension: string;
-  size: string;
-  url: string;
-  fileName?: string;
-}
+type MediaItem = NormalizedFormat;
 
 const features = [
   { icon: Film, title: "Multiple Formats", desc: "Download in MP4, WebM, MP3, M4A — choose the format that works best for you." },
@@ -67,14 +60,10 @@ const YouTubeSingleDownloader = () => {
     setLoading(true); setFormats([]); setTitle(""); setThumbnail("");
     const start = Date.now();
     try {
-      const { data, error } = await supabase.functions.invoke("youtube-download", { body: { url: url.trim() } });
-      if (error) throw error;
-      if (!data || !data.mediaItems?.length) {
-        toast.error("No downloadable formats found");
-        trackToolUsage({ tool_name: "YouTube Single Downloader", tool_slug: "youtube-single-downloader", status: "error", input_url: url.trim(), error_message: "No formats found", duration_ms: Date.now() - start });
-        return;
-      }
-      setTitle(data.title || ""); setThumbnail(data.thumbnail || ""); setFormats(data.mediaItems);
+      const result = await fetchAndNormalize(url.trim());
+      setTitle(result.title || "");
+      setThumbnail(result.thumbnail || "");
+      setFormats(result.mediaItems);
       trackToolUsage({ tool_name: "YouTube Single Downloader", tool_slug: "youtube-single-downloader", status: "success", input_url: url.trim(), duration_ms: Date.now() - start });
     } catch (err: any) {
       toast.error(err.message || "Failed to fetch video info");

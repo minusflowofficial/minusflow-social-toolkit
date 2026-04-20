@@ -1,11 +1,13 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { supabase } from "@/integrations/supabase/client";
 import { List, Loader2, CheckCircle2, XCircle, Download, Trash2, ChevronDown, ChevronUp, Settings2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 
 import { triggerBatchDownloads, triggerDownload } from "@/lib/download-manager";
+import { fetchAndNormalize } from "@/lib/youtube-api";
+
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 interface BulkFormat {
   formatId: string;
@@ -63,12 +65,7 @@ const BulkDownload = () => {
       );
 
       try {
-        const { data, error } = await supabase.functions.invoke("youtube-download", {
-          body: { url: bulkItems[i].url },
-        });
-
-        if (error) throw error;
-        if (!data || !data.mediaItems?.length) throw new Error("No formats found");
+        const result = await fetchAndNormalize(bulkItems[i].url);
 
         setItems((prev) =>
           prev.map((item, idx) =>
@@ -76,9 +73,9 @@ const BulkDownload = () => {
               ? {
                   ...item,
                   status: "done",
-                  title: data.title || "",
-                  thumbnail: data.thumbnail || "",
-                  formats: data.mediaItems,
+                  title: result.title || "",
+                  thumbnail: result.thumbnail || "",
+                  formats: result.mediaItems,
                   selectedFormat: 0,
                 }
               : item
@@ -93,6 +90,9 @@ const BulkDownload = () => {
           )
         );
       }
+
+      // Rate limit between calls
+      if (i < bulkItems.length - 1) await sleep(1200);
     }
 
     setProcessing(false);
