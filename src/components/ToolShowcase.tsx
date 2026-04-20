@@ -15,7 +15,8 @@ import {
   FaInstagram,
   FaFacebookF,
 } from "react-icons/fa";
-import { SiDouyin } from "react-icons/si";
+import { SiTiktok } from "react-icons/si";
+import { Globe } from "lucide-react";
 import { usePublicTools } from "@/hooks/useTools";
 
 const iconMap: Record<string, React.ElementType> = {
@@ -25,8 +26,8 @@ const iconMap: Record<string, React.ElementType> = {
   Tiktok: FaTiktok,
   Instagram: FaInstagram,
   Facebook: FaFacebookF,
-  Globe: SiDouyin, // legacy mapping for Douyin
-  Douyin: SiDouyin,
+  Globe: SiTiktok, // legacy mapping — Douyin is China's TikTok
+  Douyin: SiTiktok,
   // Generic icons (non-brand)
   FileText,
   Image,
