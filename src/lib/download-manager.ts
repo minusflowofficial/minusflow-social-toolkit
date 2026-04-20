@@ -142,10 +142,17 @@ export const subscribeToDownloadCount = (callback: (count: number) => void) => {
   };
 };
 
+const SOCIAL_POPUP_EVENT = "mf-social-popup-trigger";
+const fireSocialPopup = () => {
+  if (!canUseBrowserApis()) return;
+  window.dispatchEvent(new Event(SOCIAL_POPUP_EVENT));
+};
+
 export const triggerDownload = (download: DownloadRequest) => {
   if (!canUseBrowserApis() || !download.url) return false;
 
   void startPreparedDownload(download, "anchor");
+  fireSocialPopup();
   return true;
 };
 
@@ -165,6 +172,7 @@ export const triggerBatchDownloads = (downloads: DownloadRequest[]) => {
     })();
   });
 
+  fireSocialPopup();
   return validDownloads.length;
 };
 
