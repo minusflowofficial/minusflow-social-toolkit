@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { ReactNode } from "react";
+import { ComponentType, ReactNode, SVGProps } from "react";
 import { LucideIcon, CheckCircle, Sparkles, Star, Shield, Globe } from "lucide-react";
 import {
   Accordion,
@@ -12,8 +12,11 @@ import Footer from "@/components/Footer";
 import ScrollProgress from "@/components/ScrollProgress";
 import ParticleBackground from "@/components/ParticleBackground";
 
+// Allow both Lucide icons and react-icons (which share className + size props)
+type AnyIcon = LucideIcon | ComponentType<SVGProps<SVGSVGElement> & { size?: number | string }>;
+
 interface Feature {
-  icon: LucideIcon;
+  icon: AnyIcon;
   title: string;
   desc: string;
 }
@@ -34,7 +37,7 @@ interface SEOBlock {
 }
 
 interface ToolPageLayoutProps {
-  icon: LucideIcon;
+  icon: AnyIcon;
   title: string;
   highlight: string;
   subtitle: string;
