@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Download, Loader2, AlertCircle, Zap, Shield, Globe, Film, Copy, Check, Video, Smartphone, WifiOff } from "lucide-react";
+import { FaFacebookF } from "react-icons/fa";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import ToolPageLayout from "@/components/ToolPageLayout";
@@ -86,7 +87,7 @@ const FacebookSingleDownloader = () => {
 
   return (
     <ToolPageLayout
-      icon={Video}
+      icon={FaFacebookF}
       title="Facebook Video"
       highlight="Downloader"
       subtitle="Download Facebook videos in HD — fast, free, no login required."

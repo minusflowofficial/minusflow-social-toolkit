@@ -2,6 +2,7 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { Download, Loader2, Music, Film, AlertCircle, Zap, Shield, Globe, Smartphone, WifiOff } from "lucide-react";
+import { FaTiktok } from "react-icons/fa";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import ToolPageLayout from "@/components/ToolPageLayout";
@@ -82,7 +83,7 @@ const TikTokSingleDownloader = () => {
 
   return (
     <ToolPageLayout
-      icon={Music}
+      icon={FaTiktok}
       title="TikTok Video"
       highlight="Downloader"
       subtitle="Download TikTok videos without watermark in HD — MP4 and MP3 formats available."

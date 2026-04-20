@@ -2,6 +2,7 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { Download, Loader2, Music, Film, DownloadCloud, CheckCircle2, XCircle, Zap, Shield, Layers, Clock } from "lucide-react";
+import { FaTiktok } from "react-icons/fa";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
@@ -84,7 +85,7 @@ const TikTokBulkDownloader = () => {
 
   return (
     <ToolPageLayout
-      icon={DownloadCloud}
+      icon={FaTiktok}
       title="TikTok Bulk"
       highlight="Downloader"
       subtitle="Download up to 20 TikTok videos at once — paste multiple URLs and batch download instantly."

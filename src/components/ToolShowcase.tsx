@@ -1,9 +1,6 @@
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import {
-  Youtube,
-  Music,
-  Instagram,
   FileText,
   Image,
   Download,
@@ -11,23 +8,33 @@ import {
   List,
   ListVideo,
   DownloadCloud,
-  Globe,
-  Facebook,
 } from "lucide-react";
+import {
+  FaYoutube,
+  FaTiktok,
+  FaInstagram,
+  FaFacebookF,
+} from "react-icons/fa";
+import { SiTiktok } from "react-icons/si";
+import { Globe } from "lucide-react";
 import { usePublicTools } from "@/hooks/useTools";
 
 const iconMap: Record<string, React.ElementType> = {
-  Youtube,
-  Music,
-  Instagram,
+  // Brand icons (real platform logos)
+  Youtube: FaYoutube,
+  Music: FaTiktok, // legacy mapping for TikTok single
+  Tiktok: FaTiktok,
+  Instagram: FaInstagram,
+  Facebook: FaFacebookF,
+  Globe: SiTiktok, // legacy mapping — Douyin is China's TikTok
+  Douyin: SiTiktok,
+  // Generic icons (non-brand)
   FileText,
   Image,
   Download,
   List,
   ListVideo,
   DownloadCloud,
-  Globe,
-  Facebook,
 };
 
 const gradients = [

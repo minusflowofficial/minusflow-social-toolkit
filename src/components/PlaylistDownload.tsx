@@ -9,6 +9,7 @@ import { toast } from "sonner";
 
 import { triggerBatchDownloads, triggerDownload } from "@/lib/download-manager";
 import { fetchAndNormalize, type NormalizedFormat } from "@/lib/youtube-api";
+import { supabase } from "@/integrations/supabase/client";
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
@@ -119,21 +120,20 @@ const PlaylistDownload = () => {
     setShowFallback(false);
 
     try {
-      // Try lemnoslife free YouTube Data proxy
-      const resp = await fetch(
-        `https://yt.lemnoslife.com/noKey/playlistItems?part=snippet&playlistId=${encodeURIComponent(pid)}&maxResults=50`
-      );
+      // Use our own edge function (InnerTube API) — reliable, no key required
+      const { data, error } = await supabase.functions.invoke("youtube-playlist", {
+        body: { url: playlistUrl.trim() },
+      });
 
-      if (!resp.ok) throw new Error(`Playlist API error ${resp.status}`);
-      const json = await resp.json();
-      const items: any[] = json?.items || [];
-      const videoIds: string[] = items
-        .map((it) => it?.snippet?.resourceId?.videoId)
-        .filter((id): id is string => typeof id === "string" && id.length === 11);
+      if (error) throw new Error(error.message || "Failed to load playlist");
+      if ((data as any)?.error) throw new Error((data as any).error);
 
-      if (videoIds.length === 0) throw new Error("No videos found");
+      const playlistVideos: Array<{ videoId: string; title?: string; thumbnail?: string }> =
+        (data as any)?.videos || [];
 
-      const urls = videoIds.map((id) => `https://www.youtube.com/watch?v=${id}`);
+      if (playlistVideos.length === 0) throw new Error("No videos found in playlist");
+
+      const urls = playlistVideos.map((v) => `https://www.youtube.com/watch?v=${v.videoId}`);
       toast.success(`Found ${urls.length} videos in playlist!`);
       setExtracting(false);
       await startProcessingUrls(urls);
@@ -142,7 +142,7 @@ const PlaylistDownload = () => {
       setExtracting(false);
       setShowFallback(true);
       toast.message("Could not auto-load playlist", {
-        description: "Please paste the individual video URLs below.",
+        description: err?.message || "Please paste the individual video URLs below.",
       });
     }
   };

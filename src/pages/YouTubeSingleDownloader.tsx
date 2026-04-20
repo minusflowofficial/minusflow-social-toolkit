@@ -1,6 +1,7 @@
 import { useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Search, Loader2, Youtube, Zap, Shield, Globe, Film, Headphones, MonitorPlay } from "lucide-react";
+import { Search, Loader2, Zap, Shield, Globe, Film, Headphones, MonitorPlay } from "lucide-react";
+import { FaYoutube } from "react-icons/fa";
 import { Button } from "@/components/ui/button";
 import FormatCard from "@/components/FormatCard";
 import ToolPageLayout from "@/components/ToolPageLayout";
@@ -73,7 +74,7 @@ const YouTubeSingleDownloader = () => {
 
   return (
     <ToolPageLayout
-      icon={Youtube}
+      icon={FaYoutube}
       title="YouTube Video"
       highlight="Downloader"
       subtitle="Download any YouTube video in MP4, MP3, and more — fast, free, no sign-up required."

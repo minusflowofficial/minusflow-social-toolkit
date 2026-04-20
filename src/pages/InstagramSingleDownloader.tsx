@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Download, Loader2, AlertCircle, Instagram, Zap, Shield, Globe, Image, Heart, Camera } from "lucide-react";
+import { Download, Loader2, AlertCircle, Zap, Shield, Globe, Image, Heart, Camera } from "lucide-react";
+import { FaInstagram } from "react-icons/fa";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -64,7 +65,7 @@ const InstagramSingleDownloader = () => {
 
   return (
     <ToolPageLayout
-      icon={Instagram}
+      icon={FaInstagram}
       title="Instagram Reels"
       highlight="Downloader"
       subtitle="Download Instagram reels, videos, and posts in HD — fast, free, no login required."
