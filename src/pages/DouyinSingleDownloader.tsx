@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Download, Loader2, AlertCircle, Film, Music, Copy, Check, Zap, Shield, Globe, Smartphone, ChevronDown } from "lucide-react";
+import { SiTiktok } from "react-icons/si";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import ToolPageLayout from "@/components/ToolPageLayout";
@@ -160,7 +161,7 @@ const DouyinSingleDownloader = () => {
 
   return (
     <ToolPageLayout
-      icon={Globe}
+      icon={SiTiktok}
       title="Douyin Video"
       highlight="Downloader"
       subtitle="Download Douyin videos in HD — no watermark, MP4 and MP3 formats available."

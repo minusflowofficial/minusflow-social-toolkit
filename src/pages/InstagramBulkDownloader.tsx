@@ -1,6 +1,7 @@
 import { useState, useRef } from "react";
 import { motion } from "framer-motion";
-import { Download, Loader2, DownloadCloud, CheckCircle2, XCircle, Instagram, Zap, Shield, Layers, Clock, Image, Heart } from "lucide-react";
+import { Download, Loader2, DownloadCloud, CheckCircle2, XCircle, Zap, Shield, Layers, Clock, Image, Heart } from "lucide-react";
+import { FaInstagram } from "react-icons/fa";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Progress } from "@/components/ui/progress";
@@ -77,7 +78,7 @@ const InstagramBulkDownloader = () => {
 
   return (
     <ToolPageLayout
-      icon={DownloadCloud}
+      icon={FaInstagram}
       title="Instagram Bulk"
       highlight="Downloader"
       subtitle="Download up to 20 Instagram reels & videos at once — paste multiple URLs and batch download."

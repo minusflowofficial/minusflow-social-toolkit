@@ -1,4 +1,5 @@
-import { List, Zap, Shield, Globe, Layers, Clock, Download } from "lucide-react";
+import { Zap, Shield, Globe, Layers, Clock, Download } from "lucide-react";
+import { FaYoutube } from "react-icons/fa";
 import ToolPageLayout from "@/components/ToolPageLayout";
 import BulkDownload from "@/components/BulkDownload";
 
@@ -38,7 +39,7 @@ const seoBlocks = [
 const YouTubeBulkDownloader = () => {
   return (
     <ToolPageLayout
-      icon={List}
+      icon={FaYoutube}
       title="YouTube Bulk"
       highlight="Downloader"
       subtitle="Download up to 10 YouTube videos at once — paste multiple URLs and batch download instantly."

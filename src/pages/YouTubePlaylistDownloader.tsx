@@ -1,4 +1,5 @@
-import { ListVideo, Zap, Shield, Globe, Layers, Music, Download } from "lucide-react";
+import { Zap, Shield, Globe, Layers, Music, Download } from "lucide-react";
+import { FaYoutube } from "react-icons/fa";
 import ToolPageLayout from "@/components/ToolPageLayout";
 import PlaylistDownload from "@/components/PlaylistDownload";
 
@@ -38,7 +39,7 @@ const seoBlocks = [
 const YouTubePlaylistDownloader = () => {
   return (
     <ToolPageLayout
-      icon={ListVideo}
+      icon={FaYoutube}
       title="YouTube Playlist"
       highlight="Downloader"
       subtitle="Download entire YouTube playlists — paste the playlist URL and save all videos at once."

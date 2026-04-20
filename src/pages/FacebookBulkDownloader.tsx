@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { Download, Loader2, AlertCircle, Video, Film, Copy, Check, DownloadCloud } from "lucide-react";
+import { FaFacebookF } from "react-icons/fa";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
@@ -98,7 +99,7 @@ const FacebookBulkDownloader = () => {
 
   return (
     <ToolPageLayout
-      icon={Video}
+      icon={FaFacebookF}
       title="Facebook Bulk"
       highlight="Downloader"
       subtitle="Download multiple Facebook videos at once — up to 10 URLs per batch."

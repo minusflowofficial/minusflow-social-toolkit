@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Download, Loader2, AlertCircle, Film, Music, Copy, Check, DownloadCloud, Globe, ChevronDown, ChevronUp } from "lucide-react";
+import { SiTiktok } from "react-icons/si";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
@@ -174,7 +175,7 @@ const DouyinBulkDownloader = () => {
 
   return (
     <ToolPageLayout
-      icon={Globe}
+      icon={SiTiktok}
       title="Douyin Bulk"
       highlight="Downloader"
       subtitle="Download multiple Douyin videos at once — up to 10 URLs per batch."
