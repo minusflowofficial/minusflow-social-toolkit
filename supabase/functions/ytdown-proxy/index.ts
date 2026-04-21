@@ -18,6 +18,28 @@ const USER_AGENT =
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
+const normalizeYouTubeUrl = (value: string) => {
+  const videoId = extractVideoId(value);
+  return videoId ? `https://www.youtube.com/watch?v=${videoId}` : value;
+};
+
+function extractVideoId(value: string): string | null {
+  if (/^[A-Za-z0-9_-]{11}$/.test(value)) return value;
+  try {
+    const url = new URL(value);
+    if (url.hostname === "youtu.be" || url.hostname.endsWith(".youtu.be")) {
+      const id = url.pathname.slice(1).split("/")[0];
+      return /^[A-Za-z0-9_-]{11}$/.test(id) ? id : null;
+    }
+    const v = url.searchParams.get("v");
+    if (v && /^[A-Za-z0-9_-]{11}$/.test(v)) return v;
+    const match = url.pathname.match(/\/(?:shorts|embed|v)\/([A-Za-z0-9_-]{11})/);
+    return match?.[1] || null;
+  } catch {
+    return null;
+  }
+}
+
 const fetchWithTimeout = async (input: string, init: RequestInit = {}) => {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), TIMEOUT_MS);
@@ -66,6 +88,34 @@ const normalizeMediaValue = (value: unknown) => {
 const sanitizeFileName = (value: string) => {
   const cleaned = value.replace(/YTDown\.com/gi, "MinusFlow.net").replace(/[\\/:*?"<>|]+/g, "-").trim();
   return cleaned || "MinusFlow.net_download";
+};
+
+const buildFallbackInfo = (url: string) => {
+  const videoId = extractVideoId(url);
+  if (!videoId) return null;
+  return {
+    api: {
+      title: `YouTube Video ${videoId}`,
+      id: videoId,
+      imagePreviewUrl: `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`,
+      userInfo: { name: "YouTube" },
+      mediaItems: [
+        {
+          type: "Video",
+          mediaUrl: `https://www.youtube.com/watch?v=${videoId}`,
+          mediaExtension: "MP4",
+          mediaQuality: "Open",
+          mediaRes: null,
+          mediaFileSize: "Open on YouTube",
+          mediaDuration: "",
+          mediaThumbnail: `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`,
+          fallbackOpen: true,
+        },
+      ],
+      fallback: true,
+      message: "Primary download provider is blocked for this video, so a safe YouTube fallback is shown.",
+    },
+  };
 };
 
 const isAllowedDownloadHost = (hostname: string) => {
