@@ -2,9 +2,57 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
+
+const UPSTREAM_URL = "https://app.ytdown.to/proxy.php";
+const BOOTSTRAP_URLS = ["https://app.ytdown.to/en24/", "https://app.ytdown.to/en23/", "https://app.ytdown.to/"];
+const MAX_ATTEMPTS = 3;
+const TIMEOUT_MS = 8000;
+const USER_AGENT =
+  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36";
+
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+const fetchWithTimeout = async (input: string, init: RequestInit = {}) => {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), TIMEOUT_MS);
+  try {
+    return await fetch(input, { ...init, signal: controller.signal });
+  } finally {
+    clearTimeout(timeout);
+  }
+};
+
+const getSessionCookie = async () => {
+  for (const bootstrapUrl of BOOTSTRAP_URLS) {
+    try {
+      const response = await fetchWithTimeout(bootstrapUrl, {
+        headers: {
+          "User-Agent": USER_AGENT,
+          "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+          "Accept-Language": "en-US,en;q=0.9",
+        },
+      });
+      const cookie = response.headers.get("set-cookie") || "";
+      const session = cookie
+        .split(",")
+        .map((part) => part.trim())
+        .find((part) => part.startsWith("PHPSESSID="));
+      if (session) return session.split(";")[0];
+    } catch {
+      // Try the next landing page variant.
+    }
+  }
+  return "";
+};
+
+const jsonResponse = (body: Record<string, unknown>, status = 200) =>
+  new Response(JSON.stringify(body), {
+    status,
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -21,55 +69,50 @@ serve(async (req) => {
       );
     }
 
-    const body = new URLSearchParams({ url });
+    const sessionCookie = await getSessionCookie();
+    let lastError = "YouTube provider is temporarily busy. Please try again.";
 
-    const response = await fetch("https://app.ytdown.to/proxy.php", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
-        "X-Requested-With": "XMLHttpRequest",
-        "Origin": "https://app.ytdown.to",
-        "Referer": "https://app.ytdown.to/en24/",
-        "User-Agent":
-          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
-        "Accept": "*/*",
-      },
-      body: body.toString(),
-    });
+    for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt += 1) {
+      const referer = BOOTSTRAP_URLS[attempt % BOOTSTRAP_URLS.length];
+      const response = await fetchWithTimeout(UPSTREAM_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+          "X-Requested-With": "XMLHttpRequest",
+          "Origin": "https://app.ytdown.to",
+          "Referer": referer,
+          "User-Agent": USER_AGENT,
+          "Accept": "application/json, text/javascript, */*; q=0.01",
+          "Accept-Language": "en-US,en;q=0.9",
+          "Cache-Control": "no-cache",
+          "Pragma": "no-cache",
+          ...(sessionCookie ? { Cookie: sessionCookie } : {}),
+        },
+        body: new URLSearchParams({ url }).toString(),
+      });
 
-    const text = await response.text();
+      const text = await response.text();
+      if (!response.ok) {
+        lastError = `Upstream error: ${response.status}`;
+      } else {
+        try {
+          const data = JSON.parse(text);
+          return jsonResponse(data);
+        } catch {
+          lastError = text.trim().startsWith("<")
+            ? "Provider returned a browser challenge instead of video data"
+            : "Provider returned invalid video data";
+        }
+      }
 
-    if (!response.ok) {
-      return new Response(
-        JSON.stringify({
-          error: `Upstream error: ${response.status}`,
-          snippet: text.slice(0, 200),
-        }),
-        { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      if (attempt < MAX_ATTEMPTS - 1) {
+        await sleep(700 + attempt * 900);
+      }
     }
 
-    let data: unknown;
-    try {
-      data = JSON.parse(text);
-    } catch {
-      return new Response(
-        JSON.stringify({
-          error: "Upstream returned non-JSON response",
-          snippet: text.slice(0, 200),
-        }),
-        { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    return new Response(JSON.stringify(data), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return jsonResponse({ error: lastError }, 503);
   } catch (err) {
     const message = err instanceof Error ? err.message : "Internal server error";
-    return new Response(
-      JSON.stringify({ error: message }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
+    return jsonResponse({ error: message }, message.includes("aborted") ? 504 : 500);
   }
 });
