@@ -43,10 +43,22 @@ function sanitizeTitle(title: string): string {
   return title.replace(/[\\/:*?"<>|]+/g, "").trim().slice(0, 80) || "video";
 }
 
+function buildThumbnailUrl(info: YtVideoInfo): string {
+  if (info.id) return `https://i.ytimg.com/vi/${info.id}/hqdefault.jpg`;
+  return info.imagePreviewUrl || "";
+}
+
+function buildProxyDownloadUrl(mediaUrl: string, fileName: string): string {
+  const endpoint = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ytdown-proxy`;
+  const params = new URLSearchParams({ source: mediaUrl, fileName });
+  return `${endpoint}?${params.toString()}`;
+}
+
 export function normalizeMediaItems(info: YtVideoInfo): NormalizedFormat[] {
   const safeTitle = sanitizeTitle(info.title || "video");
   return (info.mediaItems || []).map((m, i) => {
     const ext = (m.mediaExtension || "").toLowerCase();
+    const fileName = `MinusFlow.net_${safeTitle}.${ext || "mp4"}`;
     const qualityLabel =
       m.type === "Audio"
         ? m.mediaQuality
@@ -58,24 +70,65 @@ export function normalizeMediaItems(info: YtVideoInfo): NormalizedFormat[] {
       quality: qualityLabel,
       extension: ext,
       size: m.mediaFileSize || "—",
-      url: m.mediaUrl,
-      fileName: `MinusFlow.net_${safeTitle}.${ext}`,
+      url: m.mediaUrl ? buildProxyDownloadUrl(m.mediaUrl, fileName) : "",
+      fileName,
     };
   });
+}
+
+async function invokeYtDownProxy(youtubeUrl: string) {
+  const { data: sessionData } = await supabase.auth.getSession();
+  const token = sessionData.session?.access_token || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+  const endpoint = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ytdown-proxy`;
+
+  const response = await fetch(endpoint, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ url: youtubeUrl }),
+  });
+
+  const text = await response.text();
+  let payload: any = null;
+  try {
+    payload = text ? JSON.parse(text) : null;
+  } catch {
+    throw new Error("Video provider returned invalid data. Please try again.");
+  }
+
+  if (!response.ok) {
+    throw new Error(payload?.error || `YouTube provider failed (${response.status}). Please retry.`);
+  }
+
+  return payload;
 }
 
 /**
  * Calls the ytdown-proxy edge function and returns the parsed `api` payload.
  */
 export async function fetchVideoInfo(youtubeUrl: string): Promise<YtVideoInfo> {
-  const { data, error } = await supabase.functions.invoke("ytdown-proxy", {
-    body: { url: youtubeUrl },
-  });
+  let data: any = null;
+  let lastError: unknown = null;
 
-  if (error) throw new Error(error.message || "Edge function error");
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    try {
+      data = await invokeYtDownProxy(youtubeUrl);
+      break;
+    } catch (error) {
+      lastError = error;
+      if (attempt === 0) await new Promise((resolve) => setTimeout(resolve, 900));
+    }
+  }
+
+  if (!data) {
+    throw lastError instanceof Error ? lastError : new Error("Video not found");
+  }
 
   // ytdown.to returns { api: { status, message, ... } }
-  const api: any = (data as any)?.api ?? data;
+  const api: any = data?.api ?? data;
 
   if (!api || api.status === "error") {
     throw new Error(api?.message || "Video not found");
@@ -95,7 +148,7 @@ export async function fetchAndNormalize(youtubeUrl: string) {
   const info = await fetchVideoInfo(youtubeUrl);
   return {
     title: info.title,
-    thumbnail: info.imagePreviewUrl,
+    thumbnail: buildThumbnailUrl(info),
     channel: info.userInfo?.name ?? "",
     duration: info.mediaItems?.[0]?.mediaDuration ?? "",
     mediaItems: normalizeMediaItems(info),

@@ -7,8 +7,8 @@ const BASE_DOWNLOAD_COUNT = 50;
 const DOWNLOAD_COUNT_STORAGE_KEY = "mf-download-count";
 const DOWNLOAD_COUNT_EVENT = "mf-download-count-updated";
 const DOWNLOAD_FRAME_CLEANUP_MS = 60_000;
-const DOWNLOAD_PREPARATION_RETRY_MS = 3_000;
-const DOWNLOAD_PREPARATION_MAX_ATTEMPTS = 120;
+const DOWNLOAD_PREPARATION_RETRY_MS = 2_000;
+const DOWNLOAD_PREPARATION_MAX_ATTEMPTS = 8;
 
 const canUseBrowserApis = () => typeof window !== "undefined";
 
@@ -59,6 +59,7 @@ const isPreparationPending = (response: Response) => {
   return (
     response.status === 425 ||
     response.status === 202 ||
+    response.status === 503 ||
     statusHeader === "queued" ||
     statusHeader === "processing"
   );
