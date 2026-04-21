@@ -273,6 +273,7 @@ const proxyDownload = async (req: Request) => {
 };
 
 const fetchVideoInfo = async (url: string) => {
+  const normalizedUrl = normalizeYouTubeUrl(url);
   const sessionCookie = await getSessionCookie();
   let lastError = "YouTube provider is temporarily busy. Please try again.";
 
@@ -292,7 +293,7 @@ const fetchVideoInfo = async (url: string) => {
         "Pragma": "no-cache",
         ...(sessionCookie ? { Cookie: sessionCookie } : {}),
       },
-      body: new URLSearchParams({ url }).toString(),
+      body: new URLSearchParams({ url: normalizedUrl }).toString(),
     });
 
     const text = await response.text();
@@ -311,6 +312,8 @@ const fetchVideoInfo = async (url: string) => {
     if (attempt < MAX_ATTEMPTS - 1) await sleep(700 + attempt * 900);
   }
 
+  const fallback = buildFallbackInfo(normalizedUrl);
+  if (fallback && lastError.includes("403")) return fallback;
   throw new Error(lastError);
 };
 
