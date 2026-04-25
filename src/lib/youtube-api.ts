@@ -10,6 +10,7 @@ export interface YtMediaItem {
   mediaDuration?: string;
   mediaThumbnail?: string;
   fallbackOpen?: boolean;
+  directDownload?: boolean;
 }
 
 export interface YtVideoInfo {
@@ -71,7 +72,7 @@ export function normalizeMediaItems(info: YtVideoInfo): NormalizedFormat[] {
       quality: qualityLabel,
       extension: ext,
       size: m.mediaFileSize || "—",
-      url: m.fallbackOpen ? m.mediaUrl : m.mediaUrl ? buildProxyDownloadUrl(m.mediaUrl, fileName) : "",
+      url: m.fallbackOpen || m.directDownload ? m.mediaUrl : m.mediaUrl ? buildProxyDownloadUrl(m.mediaUrl, fileName) : "",
       fileName,
     };
   });
