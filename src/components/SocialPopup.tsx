@@ -27,9 +27,6 @@ const SOCIAL_LINKS = [
   },
 ];
 
-const STORAGE_KEY = "mf-social-popup-last-shown";
-const COOLDOWN_MS = 1000 * 60 * 60 * 6; // show at most every 6h
-
 const SOCIAL_POPUP_EVENT = "mf-social-popup-trigger";
 
 export const triggerSocialPopup = () => {
@@ -41,12 +38,8 @@ const SocialPopup = () => {
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
-    const handler = () => {
-      const last = Number(localStorage.getItem(STORAGE_KEY) || "0");
-      if (Date.now() - last < COOLDOWN_MS) return;
-      setOpen(true);
-      localStorage.setItem(STORAGE_KEY, String(Date.now()));
-    };
+    // No cooldown — popup appears every download and stays until user closes it.
+    const handler = () => setOpen(true);
     window.addEventListener(SOCIAL_POPUP_EVENT, handler);
     return () => window.removeEventListener(SOCIAL_POPUP_EVENT, handler);
   }, []);
@@ -59,7 +52,6 @@ const SocialPopup = () => {
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           className="fixed inset-0 z-[200] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4"
-          onClick={() => setOpen(false)}
         >
           <motion.div
             initial={{ opacity: 0, y: 20, scale: 0.95 }}

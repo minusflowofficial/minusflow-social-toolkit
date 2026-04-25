@@ -67,12 +67,20 @@ export function normalizeMediaItems(info: YtVideoInfo): NormalizedFormat[] {
         : m.mediaRes
           ? `${m.mediaQuality} (${m.mediaRes})`
           : m.mediaQuality;
+    // fallbackOpen → open YouTube directly (no force-download).
+    // directDownload (real media URL) → route through proxy to set Content-Disposition and bypass CORS.
+    let url = "";
+    if (m.fallbackOpen) {
+      url = m.mediaUrl;
+    } else if (m.mediaUrl) {
+      url = buildProxyDownloadUrl(m.mediaUrl, fileName);
+    }
     return {
       formatId: `${ext}-${m.mediaQuality}-${i}`,
       quality: qualityLabel,
       extension: ext,
       size: m.mediaFileSize || "—",
-      url: m.fallbackOpen || m.directDownload ? m.mediaUrl : m.mediaUrl ? buildProxyDownloadUrl(m.mediaUrl, fileName) : "",
+      url,
       fileName,
     };
   });
