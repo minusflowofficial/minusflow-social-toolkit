@@ -1,56 +1,44 @@
+// MinusFlow YouTube proxy — direct download enabled.
+// Strategy: Invidious instances (direct googlevideo URLs) → ytdown.to → safe fallback.
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version, range",
   "Access-Control-Allow-Methods": "GET, HEAD, POST, OPTIONS",
-  "Access-Control-Expose-Headers": "Content-Disposition, Content-Length, Content-Type, Retry-After, X-Download-Status",
+  "Access-Control-Expose-Headers":
+    "Content-Disposition, Content-Length, Content-Type, Accept-Ranges, Content-Range, Retry-After, X-Download-Status",
 };
 
-const UPSTREAM_URL = "https://app.ytdown.to/proxy.php";
-const BOOTSTRAP_URLS = ["https://app.ytdown.to/en24/", "https://app.ytdown.to/en23/", "https://app.ytdown.to/"];
-const YT_INNERTUBE_KEY = "AIzaSyAO_FJ2SlqU8Q4STEHLGCilw_Y9_11qcW8";
-const MAX_ATTEMPTS = 3;
-const DOWNLOAD_RESOLVE_ATTEMPTS = 8;
-const TIMEOUT_MS = 12000;
-const RETRY_DELAY_MS = 1200;
+const TIMEOUT_MS = 15000;
 const BROWSER_USER_AGENT =
   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36";
 
-const YT_CLIENTS = [
-  {
-    clientName: "ANDROID",
-    clientVersion: "19.09.37",
-    headerClientName: "3",
-    userAgent:
-      "com.google.android.youtube/19.09.37 (Linux; U; Android 12; en_US; Pixel 6 Pro Build/SQ3A.220705.003; Cronet/122.0.6261.105)",
-    extraClient: { androidSdkVersion: 31, platform: "MOBILE", osName: "Android", osVersion: "12" },
-  },
-  {
-    clientName: "TVHTML5_SIMPLY_EMBEDDED_PLAYER",
-    clientVersion: "2.0",
-    headerClientName: "85",
-    userAgent: BROWSER_USER_AGENT,
-    extraClient: { clientScreen: "EMBED" },
-  },
-  {
-    clientName: "WEB",
-    clientVersion: "2.20240101.00.00",
-    headerClientName: "1",
-    userAgent: BROWSER_USER_AGENT,
-    extraClient: { platform: "DESKTOP" },
-  },
-] as const;
+// Public Invidious instances that expose /api/v1/videos with direct googlevideo URLs and CORS allowed.
+// We rotate through this list; first one returning data wins.
+const INVIDIOUS_INSTANCES = [
+  "https://invidious.f5.si",
+  "https://iv.melmac.space",
+  "https://invidious.nikkosphere.com",
+  "https://invidious.private.coffee",
+  "https://invidious.materialio.us",
+  "https://invidious.darkness.service",
+  "https://invidious.einfachzocken.eu",
+  "https://invidious.perennialte.ch",
+  "https://yewtu.be",
+  "https://invidious.reallyaweso.me",
+];
 
-const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
-const fetchWithTimeout = async (input: string, init: RequestInit = {}) => {
+const fetchWithTimeout = async (input: string, init: RequestInit = {}, timeoutMs = TIMEOUT_MS) => {
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), TIMEOUT_MS);
+  const t = setTimeout(() => controller.abort(), timeoutMs);
   try {
     return await fetch(input, { ...init, signal: controller.signal });
   } finally {
-    clearTimeout(timeout);
+    clearTimeout(t);
   }
 };
 
@@ -70,23 +58,12 @@ function extractVideoId(value: string): string | null {
     }
     const v = url.searchParams.get("v");
     if (v && /^[A-Za-z0-9_-]{11}$/.test(v)) return v;
-    const match = url.pathname.match(/\/(?:shorts|embed|v)\/([A-Za-z0-9_-]{11})/);
+    const match = url.pathname.match(/\/(?:shorts|embed|v|live)\/([A-Za-z0-9_-]{11})/);
     return match?.[1] || null;
   } catch {
     return null;
   }
 }
-
-const normalizeYouTubeUrl = (value: string) => {
-  const videoId = extractVideoId(value);
-  return videoId ? `https://www.youtube.com/watch?v=${videoId}` : value;
-};
-
-const normalizeMediaValue = (value: unknown) => {
-  if (typeof value !== "string") return "";
-  const normalized = value.trim();
-  return normalized && normalized.toLowerCase() !== "false" ? normalized : "";
-};
 
 const sanitizeFileName = (value: string) => {
   const cleaned = value.replace(/YTDown\.com/gi, "MinusFlow.net").replace(/[\\/:*?"<>|]+/g, "-").trim();
@@ -97,133 +74,41 @@ const formatBytes = (value: number) => {
   if (!Number.isFinite(value) || value <= 0) return "—";
   const units = ["B", "KB", "MB", "GB"];
   let size = value;
-  let unitIndex = 0;
-  while (size >= 1024 && unitIndex < units.length - 1) {
-    size /= 1024;
-    unitIndex += 1;
-  }
-  return `${size.toFixed(size >= 100 || unitIndex === 0 ? 0 : 2)} ${units[unitIndex]}`;
+  let i = 0;
+  while (size >= 1024 && i < units.length - 1) { size /= 1024; i += 1; }
+  return `${size.toFixed(size >= 100 || i === 0 ? 0 : 2)} ${units[i]}`;
 };
 
 const formatDuration = (value: number) => {
   if (!Number.isFinite(value) || value <= 0) return "";
-  const totalSeconds = Math.round(value);
-  const hours = Math.floor(totalSeconds / 3600);
-  const minutes = Math.floor((totalSeconds % 3600) / 60);
-  const seconds = totalSeconds % 60;
-  if (hours > 0) return `${hours}:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
-  return `${minutes}:${String(seconds).padStart(2, "0")}`;
+  const total = Math.round(value);
+  const h = Math.floor(total / 3600);
+  const m = Math.floor((total % 3600) / 60);
+  const s = total % 60;
+  if (h > 0) return `${h}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+  return `${m}:${String(s).padStart(2, "0")}`;
 };
 
-const parseExtension = (mimeType: string) => {
-  if (mimeType.includes("audio/mp4")) return "m4a";
-  if (mimeType.includes("audio/webm")) return "webm";
-  if (mimeType.includes("video/mp4")) return "mp4";
-  if (mimeType.includes("video/webm")) return "webm";
-  return "bin";
-};
-
-const getContentLength = (format: Record<string, unknown>) => {
-  const rawContentLength = Number(format.contentLength);
-  if (Number.isFinite(rawContentLength) && rawContentLength > 0) return rawContentLength;
-
-  const url = typeof format.url === "string" ? format.url : "";
-  if (!url) return 0;
-
-  try {
-    const parsed = new URL(url);
-    const clen = Number(parsed.searchParams.get("clen") || "0");
-    return Number.isFinite(clen) && clen > 0 ? clen : 0;
-  } catch {
-    return 0;
-  }
-};
-
+// ===== Download host policy =====
+// We allow proxying any google video CDN host (googlevideo.com), Invidious googlevideo proxies, and the ytdown providers.
 const isAllowedDownloadHost = (hostname: string) => {
-  if (
-    hostname === "ytcontent.com" ||
-    hostname.endsWith(".ytcontent.com") ||
-    hostname === "googlevideo.com" ||
-    hostname.endsWith(".googlevideo.com") ||
-    hostname === "process4.me" ||
-    hostname.endsWith(".process4.me") ||
-    hostname === "iamworker.com" ||
-    hostname.endsWith(".iamworker.com")
-  ) {
-    return true;
-  }
-
-  return /(^|\.)worker\d+\.com$/i.test(hostname);
-};
-
-const needsPreparation = (url: URL) => {
-  if (url.hostname === "googlevideo.com" || url.hostname.endsWith(".googlevideo.com")) return false;
-  return url.pathname.startsWith("/v5/video/") || url.pathname.startsWith("/v5/audio/");
-};
-
-const parseJsonResponse = async (response: Response) => {
-  const contentType = response.headers.get("Content-Type") || "";
-  if (!contentType.toLowerCase().includes("application/json")) return null;
-  try {
-    return await response.json();
-  } catch {
-    return null;
-  }
-};
-
-const resolveDownloadUrl = async (source: URL) => {
-  if (!needsPreparation(source)) {
-    return { url: source.toString(), fileName: "", ready: true };
-  }
-
-  for (let attempt = 0; attempt < DOWNLOAD_RESOLVE_ATTEMPTS; attempt += 1) {
+  const host = hostname.toLowerCase();
+  if (host === "googlevideo.com" || host.endsWith(".googlevideo.com")) return true;
+  if (host.endsWith(".youtube.com") || host === "youtube.com") return true;
+  if (host === "ytcontent.com" || host.endsWith(".ytcontent.com")) return true;
+  if (host === "process4.me" || host.endsWith(".process4.me")) return true;
+  if (host === "iamworker.com" || host.endsWith(".iamworker.com")) return true;
+  if (/(^|\.)worker\d+\.com$/i.test(host)) return true;
+  // Allow ALL Invidious instances we use (they may proxy media themselves).
+  for (const inst of INVIDIOUS_INSTANCES) {
     try {
-      const head = await fetchWithTimeout(source.toString(), {
-        method: "HEAD",
-        headers: { "User-Agent": BROWSER_USER_AGENT, Accept: "*/*" },
-      });
-      const headType = head.headers.get("Content-Type") || "";
-      if (head.ok && !headType.toLowerCase().includes("application/json")) {
-        return { url: source.toString(), fileName: "", ready: true };
-      }
-    } catch {
-    }
-
-    try {
-      const response = await fetchWithTimeout(source.toString(), {
-        headers: {
-          "User-Agent": BROWSER_USER_AGENT,
-          Accept: "application/json, text/javascript, */*; q=0.01",
-          "Accept-Language": "en-US,en;q=0.9",
-        },
-      });
-      const result = await parseJsonResponse(response.clone());
-      if (!result) {
-        return { url: source.toString(), fileName: "", ready: response.ok };
-      }
-
-      const status = String((result as any).status || "").toLowerCase();
-      if (status === "completed" && (result as any).fileUrl) {
-        return {
-          url: String((result as any).fileUrl),
-          fileName: normalizeMediaValue((result as any).fileName),
-          ready: true,
-        };
-      }
-
-      if (status && status !== "queued" && status !== "processing") {
-        return { url: source.toString(), fileName: "", ready: false };
-      }
-    } catch {
-      return { url: source.toString(), fileName: "", ready: false };
-    }
-
-    if (attempt < DOWNLOAD_RESOLVE_ATTEMPTS - 1) await sleep(RETRY_DELAY_MS);
+      if (host === new URL(inst).hostname) return true;
+    } catch {}
   }
-
-  return { url: source.toString(), fileName: "", ready: false };
+  return false;
 };
 
+// ===== Streaming proxy: forces download attachment & bypasses CORS =====
 const proxyDownload = async (req: Request) => {
   const requestUrl = new URL(req.url);
   const source = requestUrl.searchParams.get("source") || "";
@@ -242,318 +127,205 @@ const proxyDownload = async (req: Request) => {
     return jsonResponse({ error: "Unsupported download host" }, 400);
   }
 
-  const resolved = await resolveDownloadUrl(sourceUrl);
-  if (!resolved.ready || !resolved.url) {
-    return jsonResponse(
-      { error: "Download is still being prepared", status: "processing" },
-      503,
-      { "Retry-After": "3", "X-Download-Status": "processing", "Cache-Control": "no-store" },
-    );
-  }
+  const upstreamHeaders: Record<string, string> = {
+    "User-Agent": BROWSER_USER_AGENT,
+    Accept: "*/*",
+    Referer: "https://www.youtube.com/",
+    Origin: "https://www.youtube.com",
+  };
+  const range = req.headers.get("range");
+  if (range) upstreamHeaders["Range"] = range;
 
-  let finalUrl: URL;
-  try {
-    finalUrl = new URL(resolved.url);
-  } catch {
-    return jsonResponse({ error: "Invalid resolved download URL" }, 502);
-  }
+  const upstream = await fetchWithTimeout(sourceUrl.toString(), {
+    method: req.method === "HEAD" ? "HEAD" : "GET",
+    headers: upstreamHeaders,
+  }, 20000);
 
-  if (!["http:", "https:"].includes(finalUrl.protocol) || !isAllowedDownloadHost(finalUrl.hostname)) {
-    return jsonResponse({ error: "Unsupported final download host" }, 400);
-  }
-
-  const fileName = sanitizeFileName(requestedFileName || resolved.fileName || finalUrl.pathname.split("/").pop() || "MinusFlow.net_download");
-  const upstream = await fetchWithTimeout(finalUrl.toString(), {
-    method: req.method,
-    headers: { "User-Agent": BROWSER_USER_AGENT, Accept: "*/*" },
-  });
-
-  if (!upstream.ok) {
+  if (!upstream.ok && upstream.status !== 206) {
     return jsonResponse({ error: `Download provider error: ${upstream.status}` }, 502);
   }
 
-  const upstreamJson = await parseJsonResponse(upstream.clone());
-  if (upstreamJson) {
-    return jsonResponse({ error: "Download is still being prepared", status: "processing" }, 503, {
-      "Retry-After": "3",
-      "X-Download-Status": "processing",
-    });
-  }
+  const fileName = sanitizeFileName(
+    requestedFileName || sourceUrl.pathname.split("/").pop() || "MinusFlow.net_download",
+  );
 
   const headers = new Headers(corsHeaders);
   headers.set("Content-Type", upstream.headers.get("Content-Type") || "application/octet-stream");
-  const contentLength = upstream.headers.get("Content-Length");
-  if (contentLength) headers.set("Content-Length", contentLength);
-  headers.set("Content-Disposition", `attachment; filename="${fileName.replace(/["\\]/g, "_")}"; filename*=UTF-8''${encodeURIComponent(fileName)}`);
+  const cl = upstream.headers.get("Content-Length");
+  if (cl) headers.set("Content-Length", cl);
+  const cr = upstream.headers.get("Content-Range");
+  if (cr) headers.set("Content-Range", cr);
+  const ar = upstream.headers.get("Accept-Ranges");
+  if (ar) headers.set("Accept-Ranges", ar);
+  headers.set(
+    "Content-Disposition",
+    `attachment; filename="${fileName.replace(/["\\]/g, "_")}"; filename*=UTF-8''${encodeURIComponent(fileName)}`,
+  );
 
   return new Response(req.method === "HEAD" ? null : upstream.body, {
-    status: 200,
+    status: upstream.status,
     headers,
   });
 };
 
-const getSessionCookie = async () => {
-  for (const bootstrapUrl of BOOTSTRAP_URLS) {
+// ===== Invidious primary parser =====
+interface InvidiousFormat {
+  url?: string;
+  container?: string;
+  qualityLabel?: string;
+  audioQuality?: string;
+  bitrate?: string | number;
+  contentLength?: string | number;
+  resolution?: string;
+  encoding?: string;
+  type?: string; // mime
+  size?: string;
+}
+
+const audioQualityToK = (q?: string, bitrate?: number) => {
+  if (bitrate && bitrate > 0) return `${Math.max(48, Math.round(bitrate / 1000))}K`;
+  if (!q) return "128K";
+  if (q.includes("HIGH")) return "192K";
+  if (q.includes("MEDIUM")) return "128K";
+  if (q.includes("LOW")) return "64K";
+  return "128K";
+};
+
+const fetchFromInvidious = async (videoId: string) => {
+  const shuffled = [...INVIDIOUS_INSTANCES].sort(() => Math.random() - 0.5);
+  let lastError = "All Invidious instances failed";
+
+  for (const inst of shuffled) {
     try {
-      const response = await fetchWithTimeout(bootstrapUrl, {
+      const r = await fetchWithTimeout(`${inst}/api/v1/videos/${videoId}`, {
         headers: {
           "User-Agent": BROWSER_USER_AGENT,
-          Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-          "Accept-Language": "en-US,en;q=0.9",
-        },
-      });
-      const cookie = response.headers.get("set-cookie") || "";
-      const session = cookie
-        .split(",")
-        .map((part) => part.trim())
-        .find((part) => part.startsWith("PHPSESSID="));
-      if (session) return session.split(";")[0];
-    } catch {
-    }
-  }
-  return "";
-};
-
-const buildFallbackInfo = (url: string) => {
-  const videoId = extractVideoId(url);
-  if (!videoId) return null;
-  return {
-    api: {
-      title: `YouTube Video ${videoId}`,
-      id: videoId,
-      imagePreviewUrl: `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`,
-      userInfo: { name: "YouTube" },
-      mediaItems: [
-        {
-          type: "Video",
-          mediaUrl: `https://www.youtube.com/watch?v=${videoId}`,
-          mediaExtension: "MP4",
-          mediaQuality: "Open",
-          mediaRes: null,
-          mediaFileSize: "Open on YouTube",
-          mediaDuration: "",
-          mediaThumbnail: `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`,
-          fallbackOpen: true,
-          directDownload: true,
-        },
-      ],
-      fallback: true,
-      message: "Direct download formats were unavailable, so a safe YouTube fallback is shown.",
-    },
-  };
-};
-
-const mapStreamingDataToMediaItems = (payload: any) => {
-  const streamingFormats = [
-    ...(Array.isArray(payload?.streamingData?.formats) ? payload.streamingData.formats : []),
-    ...(Array.isArray(payload?.streamingData?.adaptiveFormats) ? payload.streamingData.adaptiveFormats : []),
-  ];
-
-  const seen = new Set<string>();
-  const mediaItems = streamingFormats
-    .map((format: any) => {
-      const mimeType = String(format?.mimeType || "");
-      const directUrl = typeof format?.url === "string" ? format.url : "";
-      if (!mimeType || !directUrl) return null;
-
-      const isAudio = mimeType.startsWith("audio/");
-      const isVideo = mimeType.startsWith("video/");
-      const hasAudio = isAudio || Boolean(format?.audioQuality);
-      const hasVideo = isVideo;
-
-      if (isVideo && !hasAudio) return null;
-      if (!isAudio && !isVideo) return null;
-
-      const extension = parseExtension(mimeType).toUpperCase();
-      const width = Number(format?.width || 0);
-      const height = Number(format?.height || 0);
-      const res = width > 0 && height > 0 ? `${width}x${height}` : null;
-      const bitrate = Number(format?.bitrate || format?.averageBitrate || 0);
-      const audioBitrate = Number(format?.audioSampleRate || 0);
-      const quality = isAudio
-        ? `${Math.max(64, Math.round((bitrate || audioBitrate * 16) / 1000))}K`
-        : String(format?.qualityLabel || `${height || "HD"}p`);
-      const bytes = getContentLength(format);
-      const durationSeconds = Number(payload?.videoDetails?.lengthSeconds || 0);
-      const thumbnail = payload?.videoDetails?.thumbnail?.thumbnails?.slice(-1)?.[0]?.url || "";
-      const dedupeKey = `${isAudio ? "audio" : "video"}|${extension}|${quality}|${res || ""}`;
-      if (seen.has(dedupeKey)) return null;
-      seen.add(dedupeKey);
-
-      return {
-        type: isAudio ? "Audio" : "Video",
-        mediaUrl: directUrl,
-        mediaExtension: extension,
-        mediaQuality: quality,
-        mediaRes: res,
-        mediaFileSize: formatBytes(bytes),
-        mediaDuration: formatDuration(durationSeconds),
-        mediaThumbnail: thumbnail,
-        directDownload: true,
-        sortScore: isAudio ? 1000 + bitrate : 100000 + height * 100 + bitrate,
-      };
-    })
-    .filter(Boolean)
-    .sort((a: any, b: any) => b.sortScore - a.sortScore)
-    .map(({ sortScore, ...item }: any) => item);
-
-  return mediaItems;
-};
-
-const fetchFromYouTubePlayer = async (url: string) => {
-  const videoId = extractVideoId(url);
-  if (!videoId) throw new Error("Invalid YouTube video URL");
-
-  let lastError = "Unable to fetch YouTube stream info";
-
-  for (const client of YT_CLIENTS) {
-    try {
-      const response = await fetchWithTimeout(`https://www.youtube.com/youtubei/v1/player?key=${YT_INNERTUBE_KEY}`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
           Accept: "application/json",
-          Origin: "https://www.youtube.com",
-          Referer: `https://www.youtube.com/watch?v=${videoId}`,
-          "User-Agent": client.userAgent,
-          "X-YouTube-Client-Name": client.headerClientName,
-          "X-YouTube-Client-Version": client.clientVersion,
         },
-        body: JSON.stringify({
-          videoId,
-          context: {
-            client: {
-              clientName: client.clientName,
-              clientVersion: client.clientVersion,
-              hl: "en",
-              gl: "US",
-              utcOffsetMinutes: 0,
-              ...client.extraClient,
-            },
-            thirdParty: {
-              embedUrl: `https://www.youtube.com/watch?v=${videoId}`,
-            },
-          },
-          playbackContext: {
-            contentPlaybackContext: {
-              vis: 0,
-              splay: false,
-              autoCaptionsDefaultOn: false,
-              autonavState: "STATE_NONE",
-              html5Preference: "HTML5_PREF_WANTS",
-            },
-          },
-          contentCheckOk: true,
-          racyCheckOk: true,
-        }),
-      });
+      }, 9000);
 
-      if (!response.ok) {
-        lastError = `YouTube player error ${response.status}`;
+      if (!r.ok) { lastError = `${inst} returned ${r.status}`; continue; }
+
+      const data: any = await r.json();
+      if (!data || data.error || (!data.formatStreams && !data.adaptiveFormats)) {
+        lastError = data?.error || `${inst} returned no formats`;
         continue;
       }
 
-      const payload = await response.json();
-      const playabilityStatus = String(payload?.playabilityStatus?.status || "");
-      const reason = payload?.playabilityStatus?.reason || payload?.playabilityStatus?.messages?.[0] || "";
-      const mediaItems = mapStreamingDataToMediaItems(payload);
+      const seen = new Set<string>();
+      const items: any[] = [];
 
-      if (mediaItems.length > 0) {
-        const thumbnails = payload?.videoDetails?.thumbnail?.thumbnails || [];
-        return {
-          api: {
-            title: payload?.videoDetails?.title || `YouTube Video ${videoId}`,
-            id: videoId,
-            imagePreviewUrl: thumbnails.length ? thumbnails[thumbnails.length - 1]?.url || `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg` : `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`,
-            userInfo: { name: payload?.videoDetails?.author || "YouTube" },
-            mediaItems,
-          },
-        };
+      // formatStreams = combined audio+video (best for direct download)
+      for (const f of (data.formatStreams || []) as InvidiousFormat[]) {
+        if (!f.url) continue;
+        const ext = (f.container || "mp4").toUpperCase();
+        const quality = f.qualityLabel || f.resolution || "Auto";
+        const sizeBytes = Number(f.size || 0);
+        const key = `V|${ext}|${quality}`;
+        if (seen.has(key)) continue;
+        seen.add(key);
+        items.push({
+          type: "Video",
+          mediaUrl: f.url,
+          mediaExtension: ext,
+          mediaQuality: quality,
+          mediaRes: f.resolution || null,
+          mediaFileSize: sizeBytes > 0 ? formatBytes(sizeBytes) : "Direct stream",
+          mediaDuration: formatDuration(Number(data.lengthSeconds || 0)),
+          mediaThumbnail: data.videoThumbnails?.[0]?.url || `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`,
+          directDownload: true,
+          _sort: 100000 + (parseInt(quality) || 0) * 100 + 50,
+        });
       }
 
-      if (reason) lastError = String(reason);
-      else if (playabilityStatus && playabilityStatus !== "OK") lastError = `Video unavailable (${playabilityStatus})`;
-    } catch (error) {
-      lastError = error instanceof Error ? error.message : "YouTube player request failed";
-    }
-  }
-
-  throw new Error(lastError);
-};
-
-const fetchFromYtDown = async (url: string) => {
-  const normalizedUrl = normalizeYouTubeUrl(url);
-  const sessionCookie = await getSessionCookie();
-  let lastError = "Provider returned invalid data";
-
-  for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt += 1) {
-    const referer = BOOTSTRAP_URLS[attempt % BOOTSTRAP_URLS.length];
-    try {
-      const response = await fetchWithTimeout(UPSTREAM_URL, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
-          "X-Requested-With": "XMLHttpRequest",
-          Origin: "https://app.ytdown.to",
-          Referer: referer,
-          "User-Agent": BROWSER_USER_AGENT,
-          Accept: "application/json, text/javascript, */*; q=0.01",
-          "Accept-Language": "en-US,en;q=0.9",
-          "Cache-Control": "no-cache",
-          Pragma: "no-cache",
-          ...(sessionCookie ? { Cookie: sessionCookie } : {}),
-        },
-        body: new URLSearchParams({ url: normalizedUrl }).toString(),
-      });
-
-      const text = await response.text();
-      if (!response.ok) {
-        lastError = `Upstream error: ${response.status}`;
-      } else {
-        try {
-          const parsed = JSON.parse(text);
-          if (Array.isArray(parsed?.api?.mediaItems) && parsed.api.mediaItems.length > 0) return parsed;
-          lastError = parsed?.api?.message || "No downloadable formats found";
-        } catch {
-          lastError = text.trim().startsWith("<")
-            ? "Provider returned a browser challenge instead of video data"
-            : "Provider returned invalid video data";
-        }
+      // adaptiveFormats — pick AUDIO ones (m4a/webm) for MP3 button
+      for (const f of (data.adaptiveFormats || []) as InvidiousFormat[]) {
+        if (!f.url) continue;
+        const mime = (f.type || "").toLowerCase();
+        const isAudio = mime.startsWith("audio/") || (!!f.audioQuality && !f.qualityLabel);
+        if (!isAudio) continue;
+        const ext = (f.container || (mime.includes("mp4") ? "m4a" : "webm")).toUpperCase();
+        const bitrate = Number(f.bitrate || 0);
+        const quality = audioQualityToK(f.audioQuality, bitrate);
+        const sizeBytes = Number(f.contentLength || 0);
+        const key = `A|${ext}|${quality}`;
+        if (seen.has(key)) continue;
+        seen.add(key);
+        items.push({
+          type: "Audio",
+          mediaUrl: f.url,
+          mediaExtension: ext,
+          mediaQuality: quality,
+          mediaRes: null,
+          mediaFileSize: sizeBytes > 0 ? formatBytes(sizeBytes) : "Direct stream",
+          mediaDuration: formatDuration(Number(data.lengthSeconds || 0)),
+          mediaThumbnail: data.videoThumbnails?.[0]?.url || `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`,
+          directDownload: true,
+          _sort: 1000 + bitrate / 1000,
+        });
       }
-    } catch (error) {
-      lastError = error instanceof Error ? error.message : "Provider request failed";
-    }
 
-    if (attempt < MAX_ATTEMPTS - 1) await sleep(700 + attempt * 900);
-  }
+      if (items.length === 0) { lastError = `${inst} returned no usable formats`; continue; }
 
-  throw new Error(lastError);
-};
+      items.sort((a, b) => b._sort - a._sort);
+      const cleaned = items.map(({ _sort, ...rest }) => rest);
 
-const fetchVideoInfo = async (url: string) => {
-  const normalizedUrl = normalizeYouTubeUrl(url);
-  let playerError = "";
-
-  try {
-    return await fetchFromYouTubePlayer(normalizedUrl);
-  } catch (error) {
-    playerError = error instanceof Error ? error.message : "Primary YouTube parser failed";
-  }
-
-  try {
-    return await fetchFromYtDown(normalizedUrl);
-  } catch (error) {
-    const fallback = buildFallbackInfo(normalizedUrl);
-    if (fallback) {
       return {
-        ...fallback,
         api: {
-          ...fallback.api,
-          message: `${playerError || "Primary parser failed"}. Backup provider also failed, so a safe fallback is shown.`,
+          title: data.title || `YouTube Video ${videoId}`,
+          id: videoId,
+          imagePreviewUrl:
+            data.videoThumbnails?.find((t: any) => t.quality === "maxresdefault")?.url ||
+            data.videoThumbnails?.[0]?.url ||
+            `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`,
+          userInfo: { name: data.author || "YouTube" },
+          mediaItems: cleaned,
         },
       };
+    } catch (e) {
+      lastError = e instanceof Error ? e.message : "instance failed";
+      continue;
     }
-    throw error;
+  }
+
+  throw new Error(lastError);
+};
+
+// ===== Safe fallback (Open on YouTube) =====
+const buildFallbackInfo = (videoId: string, message: string) => ({
+  api: {
+    title: `YouTube Video ${videoId}`,
+    id: videoId,
+    imagePreviewUrl: `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`,
+    userInfo: { name: "YouTube" },
+    mediaItems: [
+      {
+        type: "Video",
+        mediaUrl: `https://www.youtube.com/watch?v=${videoId}`,
+        mediaExtension: "MP4",
+        mediaQuality: "Open",
+        mediaRes: null,
+        mediaFileSize: "Open on YouTube",
+        mediaDuration: "",
+        mediaThumbnail: `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`,
+        fallbackOpen: true,
+        directDownload: true,
+      },
+    ],
+    fallback: true,
+    message,
+  },
+});
+
+const fetchVideoInfo = async (url: string) => {
+  const videoId = extractVideoId(url);
+  if (!videoId) throw new Error("Invalid YouTube video URL");
+
+  try {
+    return await fetchFromInvidious(videoId);
+  } catch (e) {
+    const message = e instanceof Error ? e.message : "Provider failed";
+    return buildFallbackInfo(videoId, `Direct download unavailable: ${message}`);
   }
 };
 
@@ -572,16 +344,13 @@ serve(async (req) => {
 
   try {
     const { url } = await req.json();
-
     if (!url || typeof url !== "string") {
       return jsonResponse({ error: "url parameter is required" }, 400);
     }
-
     const data = await fetchVideoInfo(url);
     return jsonResponse(data);
   } catch (err) {
     const message = err instanceof Error ? err.message : "Internal server error";
-    const status = message.toLowerCase().includes("invalid") ? 400 : 500;
-    return jsonResponse({ error: message }, status);
+    return jsonResponse({ error: message }, 500);
   }
 });
